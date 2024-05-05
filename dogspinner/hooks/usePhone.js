@@ -26,7 +26,7 @@ export function usePhone() {
     const rect = [
       20,
       canvas.height / 4 + 10,
-      spinnerState.energy * 50,
+      (canvas.width - 40) * (spinnerState.energy / 100),
       100 - 20,
     ];
     context.fillRect(...rect);
