@@ -44,7 +44,9 @@ function getApproximateSpeedFromHistory() {
 }
 
 let HANDLE_WIDTH = 70;
-const SPIN_FRICTION = 0.95;
+// const SPIN_FRICTION = 0.92;
+const SPIN_FRICTION = 0.97;
+// const SPIN_FRICTION = 0.9;
 let START_SIZE = 50;
 let END_SIZE = 80;
 /** @type {[number, number]} */
@@ -85,6 +87,7 @@ export function useSpinnerTick() {
   const [getCursor, setCursor] = useCursor();
 
   cached = ({ time }) => {
+    const cursor = getCursor();
     const delta = time - previousTime;
     previousTime = time;
 
@@ -132,6 +135,7 @@ export function useSpinnerTick() {
     context.strokeStyle = "black";
     context.fillStyle = "white";
     context.beginPath();
+    context.lineWidth = cursor === "pointer" && !pointer.down ? 3 : 1;
     context.arc(center[0], center[1], START_SIZE, 0, Math.PI * 2);
     context.closePath();
     context.fill();
@@ -148,7 +152,6 @@ export function useSpinnerTick() {
     context.arc(endPosition[0], endPosition[1], END_SIZE, 0, Math.PI * 2);
     context.closePath();
     context.fill();
-    const cursor = getCursor();
     context.lineWidth = cursor === "grab" ? 3 : 1;
     context.strokeStyle = "blue";
     context.stroke();
@@ -159,6 +162,15 @@ export function useSpinnerTick() {
       endPosition[0] - pointer.position[0],
       endPosition[1] - pointer.position[1]
     );
+
+    const distanceFromStart = Math.hypot(
+      center[0] - pointer.position[0],
+      center[1] - pointer.position[1]
+    );
+
+    if (hand.state === "pointing" && !pointer.down) {
+      hand.state = "idle";
+    }
 
     if (distanceFromEnd < END_SIZE) {
       if (pointer.down && hand.state === "idle") {
@@ -180,6 +192,16 @@ export function useSpinnerTick() {
         hand.state = "idle";
         setCursor("grab");
         spinnerState.speed = getApproximateSpeedFromHistory();
+      }
+    } else if (distanceFromStart < START_SIZE) {
+      if (!pointer.down && hand.state === "idle") {
+        setCursor("pointer");
+      } else if (pointer.down && hand.state === "idle") {
+        hand.state = "pointing";
+        spinnerState.speed += 0.05;
+        if (spinnerState.speed > 0) {
+          spinnerState.speed *= 1.2;
+        }
       }
     } else {
       if (hand.state === "grabbing") {

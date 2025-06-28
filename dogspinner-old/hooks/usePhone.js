@@ -26,14 +26,19 @@ export function usePhone() {
     const rect = [
       20,
       canvas.height / 4 + 10,
-      (canvas.width - 40) * (spinnerState.energy / 100),
+      (canvas.width - 40) * (spinnerState.energy / 50),
       100 - 20,
     ];
     context.fillRect(...rect);
     context.strokeStyle = "blue";
     context.strokeRect(...rect);
 
-    spinnerState.energy -= 0.009 * deltaTime;
+    if (spinnerState.energy > 40) {
+      spinnerState.energy -= 0.009 * deltaTime;
+    } else {
+      spinnerState.energy -= 0.009 * deltaTime;
+    }
+    // spinnerState.energy -= 0.009 * deltaTime;
     if (spinnerState.energy < 0) spinnerState.energy = 0;
 
     // requestAnimationFrame(tick);

@@ -1,4 +1,5 @@
 import { useContext } from "./useContext.js";
+import { useDial } from "./useDial.js";
 import { usePhone } from "./usePhone.js";
 import { useSpinnerTick } from "./useSpinner.js";
 
@@ -9,6 +10,7 @@ export function useTick() {
 
   const spinnerTick = useSpinnerTick();
   const phoneTick = usePhone();
+  const dialTick = useDial();
 
   const context = useContext();
   cached = tick;
@@ -19,6 +21,7 @@ export function useTick() {
     spinnerTick({ context, time });
     // console.log(time);
     phoneTick(time);
+    dialTick(time);
     requestAnimationFrame(tick);
   }
 
