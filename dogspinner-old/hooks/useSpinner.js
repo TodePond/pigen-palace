@@ -1,7 +1,7 @@
 import { rotatePoint } from "../utilities.js";
 import { useContext } from "./useContext.js";
 import { useCursor } from "./useCursor.js";
-import { hand } from "./useHand.js";
+import { hand } from "./hand.js";
 import { usePointer } from "./usePointer.js";
 
 export const spinnerState = {
