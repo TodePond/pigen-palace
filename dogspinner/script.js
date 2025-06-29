@@ -46,7 +46,7 @@ function tick(time = 0) {
 
   context.clearRect(0, 0, canvas.width, canvas.height);
   for (const entity of entities) {
-    entity.update(deltaTime);
+    entity.act(deltaTime);
   }
   for (const entity of entities) {
     entity.draw(context);
@@ -166,6 +166,8 @@ function setCursor(cursor) {
 // ENTITY //
 //========//
 class Entity {
+  x = 0;
+  y = 0;
   draw(context) {}
   update(deltaTime) {}
   hits([x, y]) {
@@ -173,6 +175,9 @@ class Entity {
   }
   hover() {}
   unhover() {}
+  constrain([x, y]) {
+    return [x, y];
+  }
 
   /** @returns {Entity | null} */
   touch() {
@@ -181,6 +186,16 @@ class Entity {
 
   release() {}
   drag() {}
+
+  /** @type {Entity[]} */
+  reactors = [];
+  react(deltaTime) {}
+  act(deltaTime) {
+    this.update(deltaTime);
+    for (const reactor of this.reactors) {
+      reactor.react();
+    }
+  }
 }
 
 class Circle extends Entity {
@@ -216,7 +231,7 @@ class Line extends Entity {
   fillWidth = 0;
   strokeColor = "black";
   strokeWidth = 1;
-  lineCap = "round";
+  lineCap = "butt";
   draw(context) {
     const angle = Math.atan2(this.endY - this.startY, this.endX - this.startX);
     // Four points making a fat line
@@ -276,10 +291,13 @@ class ConnectedLine extends Line {
     this.start = start;
     this.end = end;
 
-    this.update(0);
+    this.start?.reactors.push(this);
+    this.end?.reactors.push(this);
+
+    this.react();
   }
 
-  update(deltaTime) {
+  react() {
     if (!this.start || !this.end) return;
 
     this.startX = this.start.x;
@@ -290,8 +308,9 @@ class ConnectedLine extends Line {
 }
 
 class Arm extends ConnectedLine {
-  strokeColor = "rgb(100, 100, 255, 0.5)";
-  strokeWidth = 30;
+  strokeColor = "black";
+  strokeWidth = 2;
+  fillWidth = 20;
 }
 
 class Pivot extends Circle {
@@ -310,7 +329,7 @@ class Pivot extends Circle {
 class End extends Circle {
   x = 0;
   y = 0;
-  r = 30;
+  r = 20;
   fillColor = "white";
   strokeColor = "black";
   strokeWidth = 2;
@@ -318,26 +337,54 @@ class End extends Circle {
   /** @type {Handle | null} */
   handle = null;
 
+  /** @type {Handle | null} */
+  pivot = null;
+
   hits() {
     return false;
   }
 
-  constructor(handle) {
+  constructor({ handle, pivot }) {
     super();
     this.handle = handle;
+    this.pivot = pivot;
     this.update(0);
   }
 
+  speed = 0.2;
   update(deltaTime) {
     if (!this.handle) return;
-    this.x = lerp([this.x, this.handle.x], 0.1);
-    this.y = lerp([this.y, this.handle.y], 0.1);
+    const x = lerp([this.x, this.handle.x], this.speed);
+    const y = lerp([this.y, this.handle.y], this.speed);
+
+    const constrained = this.constrain([x, y]);
+    this.x = constrained[0];
+    this.y = constrained[1];
+  }
+
+  constrain([x, y]) {
+    if (!this.pivot) return [x, y];
+    // Constrain the end to be within a certain distance from the pivot
+    const distance = Math.hypot(this.pivot.x - x, this.pivot.y - y);
+    const maxDistance = 400; // Maximum distance from the pivot
+    if (distance > maxDistance) {
+      const angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
+      x = this.pivot.x + Math.cos(angle) * maxDistance;
+      y = this.pivot.y + Math.sin(angle) * maxDistance;
+    }
+    const minDistance = 350; // Minimum distance from the pivot
+    if (distance < minDistance) {
+      const angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
+      x = this.pivot.x + Math.cos(angle) * minDistance;
+      y = this.pivot.y + Math.sin(angle) * minDistance;
+    }
+    return [x, y];
   }
 }
 
 class Handle extends Circle {
-  x = canvas.width / 2 - 200;
-  y = canvas.height / 2 + 200;
+  x = canvas.width / 2 - 300;
+  y = canvas.height / 2 + 300;
   r = 50;
   fillColor = "rgb(100, 100, 255, 1.0)";
   strokeColor = "black";
@@ -370,7 +417,7 @@ class Handle extends Circle {
 
 const pivot = new Pivot();
 const handle = new Handle();
-const end = new End(handle);
+const end = new End({ handle, pivot });
 const arm = new Arm({ start: pivot, end: end });
 const forearm = new Arm({ start: end, end: handle });
 
