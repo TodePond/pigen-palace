@@ -326,7 +326,7 @@ class Pivot extends Circle {
   }
 }
 
-class End extends Circle {
+class End extends Entity {
   x = 0;
   y = 0;
   r = 20;
@@ -348,14 +348,14 @@ class End extends Circle {
     super();
     this.handle = handle;
     this.pivot = pivot;
-    this.update(0);
   }
 
-  speed = 0.2;
+  speed = 0.3;
   update(deltaTime) {
     if (!this.handle) return;
-    const x = lerp([this.x, this.handle.x], this.speed);
-    const y = lerp([this.y, this.handle.y], this.speed);
+    const speed = Math.max(0, this.speed);
+    const x = lerp([this.x, this.handle.x], speed);
+    const y = lerp([this.y, this.handle.y], speed);
 
     const constrained = this.constrain([x, y]);
     this.x = constrained[0];
@@ -364,20 +364,58 @@ class End extends Circle {
 
   constrain([x, y]) {
     if (!this.pivot) return [x, y];
+    if (!this.handle) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
     const distance = Math.hypot(this.pivot.x - x, this.pivot.y - y);
     const maxDistance = 400; // Maximum distance from the pivot
-    if (distance > maxDistance) {
-      const angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
-      x = this.pivot.x + Math.cos(angle) * maxDistance;
-      y = this.pivot.y + Math.sin(angle) * maxDistance;
+    let angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
+    // if (distance > maxDistance) {
+    //   x = this.pivot.x + Math.cos(angle) * maxDistance;
+    //   y = this.pivot.y + Math.sin(angle) * maxDistance;
+    // }
+    // const minDistance = 350; // Minimum distance from the pivot
+    // if (distance < minDistance) {
+    //   const angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
+    //   x = this.pivot.x + Math.cos(angle) * minDistance;
+    //   y = this.pivot.y + Math.sin(angle) * minDistance;
+    // }
+
+    let angleOfHandleAroundPivot = Math.atan2(
+      this.handle.y - this.pivot.y,
+      this.handle.x - this.pivot.x
+    );
+
+    if (angle < 0) {
+      angle += Math.PI * 2; // Normalize angle to be between 0 and 2*PI
     }
-    const minDistance = 350; // Minimum distance from the pivot
-    if (distance < minDistance) {
-      const angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
-      x = this.pivot.x + Math.cos(angle) * minDistance;
-      y = this.pivot.y + Math.sin(angle) * minDistance;
+    if (angleOfHandleAroundPivot < 0) {
+      angleOfHandleAroundPivot += Math.PI * 2; // Normalize angle to be between 0 and 2*PI
     }
+    const angleDifferenceBetweenHandleAndEnd = angle - angleOfHandleAroundPivot;
+
+    // If the angle difference is too large, rotate it a bit
+    const maxAngleDifference = Math.PI / 40;
+    if (Math.abs(angleDifferenceBetweenHandleAndEnd) > maxAngleDifference) {
+      const direction = angleDifferenceBetweenHandleAndEnd > 0 ? 1 : -1;
+      const newAngle =
+        angleOfHandleAroundPivot + direction * maxAngleDifference;
+      x = this.pivot.x + Math.cos(newAngle) * distance;
+      y = this.pivot.y + Math.sin(newAngle) * distance;
+    }
+
+    const handleDistanceFromPivot = Math.hypot(
+      this.handle.x - this.pivot.x,
+      this.handle.y - this.pivot.y
+    );
+
+    const newAngle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
+
+    // Make the distance between the end and the pivot be the same as the distance between the handle and the pivot
+    if (distance !== handleDistanceFromPivot) {
+      x = this.pivot.x + Math.cos(newAngle) * handleDistanceFromPivot;
+      y = this.pivot.y + Math.sin(newAngle) * handleDistanceFromPivot;
+    }
+
     return [x, y];
   }
 }
@@ -392,6 +430,17 @@ class Handle extends Circle {
   touchOffsetX = 0;
   touchOffsetY = 0;
 
+  /** @type {Pivot | null} */
+  pivot = null;
+
+  /** @type {End | null} */
+  end = null;
+
+  constructor({ pivot }) {
+    super();
+    this.pivot = pivot;
+  }
+
   hover() {
     this.r = 55;
     setCursor("grab");
@@ -402,6 +451,8 @@ class Handle extends Circle {
     setCursor("default");
   }
 
+  update(deltaTime) {}
+
   touch() {
     setCursor("grabbing");
     this.touchOffsetX = this.x - pointer.x;
@@ -410,19 +461,64 @@ class Handle extends Circle {
   }
 
   drag() {
-    this.x = pointer.x + this.touchOffsetX;
-    this.y = pointer.y + this.touchOffsetY;
+    const x = pointer.x + this.touchOffsetX;
+    const y = pointer.y + this.touchOffsetY;
+
+    const constrained = this.constrain([x, y]);
+    this.x = constrained[0];
+    this.y = constrained[1];
+  }
+
+  constrain([x, y]) {
+    if (!this.pivot) return [x, y];
+    // Constrain the end to be within a certain distance from the pivot
+    const positionIfItWere400Exactly = [
+      this.pivot.x +
+        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * 400,
+      this.pivot.y +
+        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * 400,
+    ];
+
+    // Ease between the current position and the position if it were 400 exactly
+    x = lerp([x, positionIfItWere400Exactly[0]], 0.7);
+    y = lerp([y, positionIfItWere400Exactly[1]], 0.7);
+
+    return [x, y];
+  }
+
+  release() {
+    if (!this.pivot) return;
+    /** @type [number, number] */
+    const positionIfItWere400Exactly = [
+      this.pivot.x +
+        Math.cos(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
+          400,
+      this.pivot.y +
+        Math.sin(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
+          400,
+    ];
+
+    // Snap to the position if it were 400 exactly
+    this.x = positionIfItWere400Exactly[0];
+    this.y = positionIfItWere400Exactly[1];
   }
 }
 
 const pivot = new Pivot();
-const handle = new Handle();
+const handle = new Handle({ pivot });
 const end = new End({ handle, pivot });
 const arm = new Arm({ start: pivot, end: end });
 const forearm = new Arm({ start: end, end: handle });
 
 addEntity(arm);
-addEntity(forearm);
+// addEntity(forearm);
 addEntity(end);
 addEntity(pivot);
 addEntity(handle);
+
+{
+  handle.end = end;
+  const constrained = handle.constrain([handle.x, handle.y]);
+  handle.x = constrained[0];
+  handle.y = constrained[1];
+}
