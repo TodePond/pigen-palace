@@ -385,12 +385,21 @@ class End extends Entity {
       this.handle.x - this.pivot.x
     );
 
-    if (angle < 0) {
-      angle += Math.PI * 2; // Normalize angle to be between 0 and 2*PI
+    const signAngleOfHandleAroundPivot = Math.sign(angleOfHandleAroundPivot);
+    const signAngle = Math.sign(angle);
+
+    if (
+      Math.abs(angleOfHandleAroundPivot) > Math.PI / 2 &&
+      Math.abs(angle) > Math.PI / 2 &&
+      signAngleOfHandleAroundPivot !== signAngle
+    ) {
+      if (signAngleOfHandleAroundPivot < 0) {
+        angleOfHandleAroundPivot += Math.PI * 2;
+      } else {
+        angleOfHandleAroundPivot -= Math.PI * 2;
+      }
     }
-    if (angleOfHandleAroundPivot < 0) {
-      angleOfHandleAroundPivot += Math.PI * 2; // Normalize angle to be between 0 and 2*PI
-    }
+
     const angleDifferenceBetweenHandleAndEnd = angle - angleOfHandleAroundPivot;
 
     // If the angle difference is too large, rotate it a bit
