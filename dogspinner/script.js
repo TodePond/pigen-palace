@@ -350,7 +350,7 @@ class End extends Entity {
     this.pivot = pivot;
   }
 
-  speed = 0.3;
+  speed = 0;
   update(deltaTime) {
     if (!this.handle) return;
     const speed = Math.max(0, this.speed);
@@ -403,7 +403,8 @@ class End extends Entity {
     const angleDifferenceBetweenHandleAndEnd = angle - angleOfHandleAroundPivot;
 
     // If the angle difference is too large, rotate it a bit
-    const maxAngleDifference = Math.PI / 40;
+    const maxAngleDifference = 0;
+    // const maxAngleDifference = 0.02;
     if (Math.abs(angleDifferenceBetweenHandleAndEnd) > maxAngleDifference) {
       const direction = angleDifferenceBetweenHandleAndEnd > 0 ? 1 : -1;
       const newAngle =
@@ -466,6 +467,7 @@ class Handle extends Circle {
     setCursor("grabbing");
     this.touchOffsetX = this.x - pointer.x;
     this.touchOffsetY = this.y - pointer.y;
+    this.r = 50;
     return this;
   }
 
@@ -478,6 +480,7 @@ class Handle extends Circle {
     this.y = constrained[1];
   }
 
+  stretch = 0.9;
   constrain([x, y]) {
     if (!this.pivot) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
@@ -489,8 +492,8 @@ class Handle extends Circle {
     ];
 
     // Ease between the current position and the position if it were 400 exactly
-    x = lerp([x, positionIfItWere400Exactly[0]], 0.7);
-    y = lerp([y, positionIfItWere400Exactly[1]], 0.7);
+    x = lerp([x, positionIfItWere400Exactly[0]], this.stretch);
+    y = lerp([y, positionIfItWere400Exactly[1]], this.stretch);
 
     return [x, y];
   }
