@@ -165,6 +165,12 @@ function setCursor(cursor) {
 //========//
 // ENTITY //
 //========//
+function triggerAllReactors(deltaTime = 0) {
+  for (const entity of entities) {
+    entity.react(deltaTime);
+  }
+}
+
 class Entity {
   x = 0;
   y = 0;
@@ -315,7 +321,8 @@ class Arm extends ConnectedLine {
 
 class Pivot extends Circle {
   x = canvas.width / 2;
-  y = canvas.height / 2;
+  y = canvas.height - ARM_LENGTH - HANDLE_RADIUS * 4;
+
   r = 30;
   fillColor = "white";
   strokeColor = "black";
@@ -367,7 +374,7 @@ class End extends Entity {
     if (!this.handle) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
     const distance = Math.hypot(this.pivot.x - x, this.pivot.y - y);
-    const maxDistance = 400; // Maximum distance from the pivot
+    const maxDistance = ARM_LENGTH; // Maximum distance from the pivot
     let angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
     // if (distance > maxDistance) {
     //   x = this.pivot.x + Math.cos(angle) * maxDistance;
@@ -430,10 +437,12 @@ class End extends Entity {
   }
 }
 
+const ARM_LENGTH = 300;
+const HANDLE_RADIUS = 50;
 class Handle extends Circle {
-  x = canvas.width / 2 - 300;
-  y = canvas.height / 2 + 300;
-  r = 50;
+  x = canvas.width / 2;
+  y = canvas.height;
+  r = HANDLE_RADIUS;
   fillColor = "rgb(100, 100, 255, 1.0)";
   strokeColor = "black";
   strokeWidth = 2;
@@ -449,6 +458,7 @@ class Handle extends Circle {
   constructor({ pivot }) {
     super();
     this.pivot = pivot;
+    this.release();
   }
 
   hover() {
@@ -486,12 +496,12 @@ class Handle extends Circle {
     // Constrain the end to be within a certain distance from the pivot
     const positionIfItWere400Exactly = [
       this.pivot.x +
-        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * 400,
+        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * ARM_LENGTH,
       this.pivot.y +
-        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * 400,
+        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * ARM_LENGTH,
     ];
 
-    // Ease between the current position and the position if it were 400 exactly
+    // Ease between the current position and the position if it were ARM_LENGTH exactly
     x = lerp([x, positionIfItWere400Exactly[0]], this.stretch);
     y = lerp([y, positionIfItWere400Exactly[1]], this.stretch);
 
@@ -504,18 +514,21 @@ class Handle extends Circle {
     const positionIfItWere400Exactly = [
       this.pivot.x +
         Math.cos(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
-          400,
+          ARM_LENGTH,
       this.pivot.y +
         Math.sin(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
-          400,
+          ARM_LENGTH,
     ];
 
-    // Snap to the position if it were 400 exactly
+    // Snap to the position if it were ARM_LENGTH exactly
     this.x = positionIfItWere400Exactly[0];
     this.y = positionIfItWere400Exactly[1];
   }
 }
 
+//===========//
+// INSTANCES //
+//===========//
 const pivot = new Pivot();
 const handle = new Handle({ pivot });
 const end = new End({ handle, pivot });
