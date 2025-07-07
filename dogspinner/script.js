@@ -526,6 +526,47 @@ class Handle extends Circle {
   }
 }
 
+class Sprite extends Entity {
+  x = 0;
+  y = 0;
+  src = "";
+  image = new Image();
+
+  width = 0;
+  height = 0;
+
+  constructor({ src }) {
+    super();
+    this.src = src;
+    this.image.src = src;
+    this.image.onload = () => {
+      this.width = this.image.width;
+      this.height = this.image.height;
+    };
+  }
+
+  draw(context) {
+    if (!this.image.complete) return;
+    context.drawImage(
+      this.image,
+      this.x - this.width / 2,
+      this.y - this.height / 2,
+      this.width,
+      this.height
+    );
+
+    // stroke around it
+    // context.strokeStyle = "black";
+    // context.lineWidth = 2;
+    // context.strokeRect(
+    //   this.x - this.width / 2,
+    //   this.y - this.height / 2,
+    //   this.width,
+    //   this.height
+    // );
+  }
+}
+
 //===========//
 // INSTANCES //
 //===========//
@@ -535,6 +576,13 @@ const end = new End({ handle, pivot });
 const arm = new Arm({ start: pivot, end: end });
 const forearm = new Arm({ start: end, end: handle });
 
+const idle = new Sprite({
+  src: "assets/idle.gif",
+});
+idle.x = canvas.width / 2;
+idle.y = canvas.height / 2 - ARM_LENGTH;
+
+addEntity(idle);
 addEntity(arm);
 // addEntity(forearm);
 addEntity(end);
