@@ -55,6 +55,12 @@ function tick(time = 0) {
   requestAnimationFrame(tick);
 }
 
+addEventListener("resize", () => {
+  for (const entity of entities) {
+    entity.resize();
+  }
+});
+
 function pickAtom([x, y]) {
   for (let i = entities.length - 1; i >= 0; i--) {
     const entity = entities[i];
@@ -174,39 +180,102 @@ function triggerAllReactors(deltaTime = 0) {
 class Entity {
   x = 0;
   y = 0;
+
+  constructor() {
+    this.resize();
+    // const constrained = this.constrain([this.x, this.y]);
+    // this.x = constrained[0];
+    // this.y = constrained[1];
+  }
+
+  /**
+   * Draw the entity to the canvas.
+   * @param {CanvasRenderingContext2D} context
+   */
   draw(context) {}
+
+  /**
+   * Update the entity. Called every frame.
+   * @param {number} deltaTime
+   */
   update(deltaTime) {}
+
+  /**
+   * Hit test a point against the entity.
+   * @param {[number, number]} point - [x, y]
+   * @returns {boolean}
+   */
   hits([x, y]) {
     return false;
   }
+
+  /**
+   * Called when the pointer starts hovering over the entity.
+   */
   hover() {}
+
+  /**
+   * Called when the pointer stops hovering over the entity.
+   */
   unhover() {}
+
+  /**
+   * Limit the entity's position to a certain range.
+   * @param {[number, number]} point - [x, y]
+   * @returns {[number, number]} - [x, y]
+   */
   constrain([x, y]) {
     return [x, y];
   }
 
-  /** @returns {Entity | null} */
+  /**
+   * Called when the pointer starts touching the entity.
+   * @returns {Entity | null} - the entity that was touched, or null to not touch the entity
+   */
   touch() {
     return this;
   }
 
+  /**
+   * Called when the pointer stops touching the entity.
+   */
   release() {}
+
+  /**
+   * Called when the pointer starts dragging the entity.
+   */
   drag() {}
 
-  /** @type {Entity[]} */
-  reactors = [];
+  /**
+   * If the entity should derive any state from other things, define it here.
+   * @param {number} deltaTime - Time since the last frame
+   */
   react(deltaTime) {}
+
+  /**
+   * Entities that should react in response to this entity's state.
+   * @type {Entity[]}
+   **/
+  reactors = [];
+
+  /**
+   * Called when the window is resized.
+   */
+  resize() {}
+
+  /**
+   * Update the entity and all of its reactors.
+   * @param {number} deltaTime - Time since the last frame
+   */
   act(deltaTime) {
     this.update(deltaTime);
     for (const reactor of this.reactors) {
-      reactor.react();
+      reactor.react(deltaTime);
     }
   }
 }
 
 class Circle extends Entity {
-  x = 0;
-  y = 0;
   r = 10;
   fillColor = "white";
   strokeColor = "black";
@@ -320,9 +389,6 @@ class Arm extends ConnectedLine {
 }
 
 class Pivot extends Circle {
-  x = canvas.width / 2;
-  y = canvas.height - ARM_LENGTH - HANDLE_RADIUS * 4;
-
   r = 30;
   fillColor = "white";
   strokeColor = "black";
@@ -330,6 +396,12 @@ class Pivot extends Circle {
 
   hits() {
     return false;
+  }
+
+  resize() {
+    this.x = canvas.width / 2;
+    this.y = canvas.height - ARM_LENGTH - HANDLE_RADIUS * 2.5;
+    console.log(this.x, this.y);
   }
 }
 
@@ -369,6 +441,10 @@ class End extends Entity {
     this.y = constrained[1];
   }
 
+  /**
+   * @param {[number, number]} point - [x, y]
+   * @returns {[number, number]} - [x, y]
+   */
   constrain([x, y]) {
     if (!this.pivot) return [x, y];
     if (!this.handle) return [x, y];
@@ -438,7 +514,9 @@ class End extends Entity {
 }
 
 const ARM_LENGTH = 300;
-const HANDLE_RADIUS = 50;
+const HANDLE_RADIUS = 60;
+const HANDLE_RADIUS_HOVER = 5;
+
 class Handle extends Circle {
   x = canvas.width / 2;
   y = canvas.height;
@@ -458,16 +536,16 @@ class Handle extends Circle {
   constructor({ pivot }) {
     super();
     this.pivot = pivot;
-    this.release();
+    pivot.reactors.push(this);
   }
 
   hover() {
-    this.r = 55;
+    this.r = HANDLE_RADIUS + HANDLE_RADIUS_HOVER;
     setCursor("grab");
   }
 
   unhover() {
-    this.r = 50;
+    this.r = HANDLE_RADIUS;
     setCursor("default");
   }
 
@@ -477,7 +555,7 @@ class Handle extends Circle {
     setCursor("grabbing");
     this.touchOffsetX = this.x - pointer.x;
     this.touchOffsetY = this.y - pointer.y;
-    this.r = 50;
+    this.r = HANDLE_RADIUS;
     return this;
   }
 
@@ -490,7 +568,18 @@ class Handle extends Circle {
     this.y = constrained[1];
   }
 
+  react() {
+    const constrained = this.constrain([this.x, this.y]);
+    this.x = constrained[0];
+    this.y = constrained[1];
+  }
+
   stretch = 0.9;
+
+  /**
+   * @param {[number, number]} point - [x, y]
+   * @returns {[number, number]} - [x, y]
+   */
   constrain([x, y]) {
     if (!this.pivot) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
@@ -509,20 +598,23 @@ class Handle extends Circle {
   }
 
   release() {
-    if (!this.pivot) return;
-    /** @type [number, number] */
-    const positionIfItWere400Exactly = [
-      this.pivot.x +
-        Math.cos(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
-          ARM_LENGTH,
-      this.pivot.y +
-        Math.sin(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
-          ARM_LENGTH,
-    ];
+    const constrained = this.constrain([this.x, this.y]);
+    this.x = constrained[0];
+    this.y = constrained[1];
+    // if (!this.pivot) return;
+    // /** @type [number, number] */
+    // const positionIfItWere400Exactly = [
+    //   this.pivot.x +
+    //     Math.cos(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
+    //       ARM_LENGTH,
+    //   this.pivot.y +
+    //     Math.sin(Math.atan2(this.y - this.pivot.y, this.x - this.pivot.x)) *
+    //       ARM_LENGTH,
+    // ];
 
-    // Snap to the position if it were ARM_LENGTH exactly
-    this.x = positionIfItWere400Exactly[0];
-    this.y = positionIfItWere400Exactly[1];
+    // // Snap to the position if it were ARM_LENGTH exactly
+    // this.x = positionIfItWere400Exactly[0];
+    // this.y = positionIfItWere400Exactly[1];
   }
 }
 
@@ -570,28 +662,29 @@ class Sprite extends Entity {
 //===========//
 // INSTANCES //
 //===========//
-const pivot = new Pivot();
-const handle = new Handle({ pivot });
-const end = new End({ handle, pivot });
-const arm = new Arm({ start: pivot, end: end });
-const forearm = new Arm({ start: end, end: handle });
-
-const idle = new Sprite({
-  src: "assets/idle.gif",
-});
-idle.x = canvas.width / 2;
-idle.y = canvas.height / 2 - ARM_LENGTH;
-
-addEntity(idle);
-addEntity(arm);
-// addEntity(forearm);
-addEntity(end);
-addEntity(pivot);
-addEntity(handle);
-
 {
-  handle.end = end;
-  const constrained = handle.constrain([handle.x, handle.y]);
-  handle.x = constrained[0];
-  handle.y = constrained[1];
+  const pivot = new Pivot();
+  const handle = new Handle({ pivot });
+  const end = new End({ handle, pivot });
+  const arm = new Arm({ start: pivot, end: end });
+  const forearm = new Arm({ start: end, end: handle });
+
+  const idle = new Sprite({
+    src: "assets/idle.gif",
+  });
+
+  function handleResize() {
+    idle.x = canvas.width / 2;
+    idle.y = canvas.height / 2 - ARM_LENGTH;
+  }
+
+  addEventListener("resize", handleResize);
+  handleResize();
+
+  addEntity(idle);
+  addEntity(arm);
+  // addEntity(forearm);
+  addEntity(end);
+  addEntity(pivot);
+  addEntity(handle);
 }
