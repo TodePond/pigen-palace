@@ -78,6 +78,10 @@ function lerp([a, b], t) {
   return a + (b - a) * t;
 }
 
+function lerpPoint([a, b], t) {
+  return [lerp([a[0], b[0]], t), lerp([a[1], b[1]], t)];
+}
+
 //=========//
 // POINTER //
 //=========//
@@ -278,18 +282,21 @@ class Circle extends Entity {
   strokeColor = "black";
   strokeWidth = 1;
 
+  pinX = 0;
+  pinY = 0;
+
   draw(context) {
     context.fillStyle = this.fillColor;
     context.strokeStyle = this.strokeColor;
     context.lineWidth = this.strokeWidth;
     context.beginPath();
-    context.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    context.arc(this.x + this.pinX, this.y + this.pinY, this.r, 0, Math.PI * 2);
     context.fill();
     context.stroke();
   }
 
   hits([x, y]) {
-    const distance = Math.hypot(this.x - x, this.y - y);
+    const distance = Math.hypot(this.x + this.pinX - x, this.y + this.pinY - y);
     return distance <= this.r;
   }
 }
@@ -380,15 +387,16 @@ class ConnectedLine extends Line {
 }
 
 class Arm extends ConnectedLine {
-  strokeColor = "black";
+  strokeColor = "transparent";
   strokeWidth = 2;
+  fillColor = "transparent";
   fillWidth = 20;
 }
 
 class Pivot extends Circle {
   r = 30;
-  fillColor = "white";
-  strokeColor = "black";
+  fillColor = "transparent";
+  strokeColor = "transparent";
   strokeWidth = 2;
 
   hits() {
@@ -397,7 +405,7 @@ class Pivot extends Circle {
 
   resize() {
     this.x = canvas.width / 2;
-    this.y = canvas.height - getArmLength() - getHandleRadius() * 2.5;
+    this.y = (canvas.height / 3) * 2.25;
   }
 }
 
@@ -509,7 +517,7 @@ class End extends Entity {
   }
 }
 
-const BASE_ARM_LENGTH = 300;
+const BASE_ARM_LENGTH = 275;
 const BASE_HANDLE_RADIUS = 60;
 const BASE_HANDLE_RADIUS_HOVER = 5;
 
@@ -527,8 +535,10 @@ class Handle extends Circle {
   x = canvas.width / 2;
   y = canvas.height;
   r = getHandleRadius();
-  fillColor = "rgb(100, 100, 255, 1.0)";
-  strokeColor = "black";
+  fillColor = "transparent";
+  strokeColor = "transparent";
+  // fillColor = "rgb(100, 100, 255, 1.0)";
+  // strokeColor = "black";
   strokeWidth = 2;
   touchOffsetX = 0;
   touchOffsetY = 0;
@@ -559,8 +569,8 @@ class Handle extends Circle {
 
   touch() {
     setCursor("grabbing");
-    this.touchOffsetX = this.x - pointer.x;
-    this.touchOffsetY = this.y - pointer.y;
+    this.touchOffsetX = this.x - pointer.x + this.pinX;
+    this.touchOffsetY = this.y - pointer.y + this.pinY;
     this.r = getHandleRadius();
     return this;
   }
@@ -629,6 +639,77 @@ class Handle extends Circle {
 const MOBILE_BREAKPOINT_WIDTH = 500;
 const SHORT_BREAKPOINT_HEIGHT = 650;
 
+class AnimatedSprite extends Entity {
+  /**
+   *
+   * @param {object} options
+   * @param {string[]} options.frames
+   * @param {number} options.fps
+   */
+  constructor({ frames, fps }) {
+    super();
+
+    this.fps = fps;
+    this.sprites = frames.map((frame) => new Sprite({ src: frame }));
+    const firstSprite = this.sprites[0];
+    if (!firstSprite) {
+      throw new Error("Frames array must have at least one frame");
+    }
+    this.dummy.image.onload = () => {};
+    firstSprite.image.addEventListener("load", () => {
+      this.dummy.image = firstSprite.image;
+      this.dummy.src = firstSprite.src;
+      this.dummy.width = firstSprite.width;
+      this.dummy.height = firstSprite.height;
+    });
+  }
+
+  /**
+   * @param {Sprite} child
+   */
+  updateChildFromDummy(child) {
+    for (const key in this.dummy) {
+      if (key === "src") continue;
+      if (key === "image") continue;
+      child[key] = this.dummy[key];
+    }
+  }
+
+  dummy = new Sprite({ src: "assets/placeholder-dog.gif" });
+
+  /** @type {Sprite[]} */
+  sprites = [];
+
+  /** @type {number} */
+  currentFrame = 0;
+
+  /** @type {number} */
+  time = 0;
+
+  /** @type {number} */
+  frameRate = 0;
+
+  /** @param {number} deltaTime */
+  update(deltaTime) {
+    // deltatime is milliseconds
+    // fps is frames per second
+    // so we need to convert deltatime to frames
+    const msPerFrame = 1000 / this.fps;
+    this.time += deltaTime;
+    while (this.time >= msPerFrame) {
+      this.currentFrame = (this.currentFrame + 1) % this.sprites.length;
+      this.time -= msPerFrame;
+    }
+  }
+
+  draw(context) {
+    const currentSprite = this.sprites[this.currentFrame];
+    if (!currentSprite) return;
+    this.updateChildFromDummy(currentSprite);
+    currentSprite.draw(context);
+  }
+}
+
 class Sprite extends Entity {
   x = 0;
   y = 0;
@@ -653,6 +734,10 @@ class Sprite extends Entity {
 
   anchorX = 0.5;
   anchorY = 0.5;
+
+  pinRotation = 0;
+  pinX = 0;
+  pinY = 0;
 
   constructor({ src }) {
     super();
@@ -700,6 +785,10 @@ class Sprite extends Entity {
     const cropWidth = width * (1 - cropHorizontal);
     const cropHeight = height * (1 - cropVertical);
     context.save();
+    context.translate(this.pinX, this.pinY);
+    context.rotate(this.pinRotation);
+    context.translate(-this.pinX, -this.pinY);
+
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
 
@@ -718,6 +807,24 @@ class Sprite extends Entity {
   }
 }
 
+//========//
+// FRAMES //
+//========//
+/**
+ * @param {object} options
+ * @param {string} options.base - base path, e.g. "assets/dog/dog-"
+ * @param {number} options.count - number of frames
+ * @param {string} options.type - file type, e.g. "png"
+ * @param {number} options.pad - number of digits to pad the frame number with
+ * @returns {string[]}
+ */
+function getFramePaths({ base, count, type, pad }) {
+  return Array.from(
+    { length: count },
+    (_, i) => `${base}${i.toString().padStart(pad, "0")}.${type}`
+  );
+}
+
 //===========//
 // INSTANCES //
 //===========//
@@ -727,43 +834,107 @@ class Sprite extends Entity {
   const end = new End({ handle, pivot });
   const arm = new Arm({ start: pivot, end: end });
 
-  const title = new Sprite({ src: "assets/title.gif" });
-  title.mobileScale = 0.75;
-  title.cropBottom = 0.7;
-  title.shortScale = 0.7;
+  handle.pinX = 90;
 
-  const dog = new Sprite({ src: "assets/placeholder-dog.gif" });
-  dog.mobileScale = 0.75;
-  dog.shortScale = 0.7;
+  const titleBoil = new AnimatedSprite({
+    frames: [
+      "assets/title/title-0.png",
+      "assets/title/title-1.png",
+      "assets/title/title-2.png",
+    ],
+    fps: 8,
+  });
+  titleBoil.dummy.mobileScale = 0.75;
+  titleBoil.dummy.cropBottom = 0.7;
+  titleBoil.dummy.shortScale = 0.7;
 
-  const handleImage = new Sprite({ src: "assets/placeholder-handle.png" });
-  handleImage.anchorY = 0.2;
-  handleImage.anchorX = 0.473036896878;
-  handleImage.shortScale = 0.65;
-  handleImage.scale = 1;
-  handleImage.mobileScale = 0.7;
-  handleImage.update = () => {
-    handleImage.rotation += 0.01;
+  const handleBoil = new AnimatedSprite({
+    frames: [
+      "assets/handle/handle-0.png",
+      "assets/handle/handle-1.png",
+      "assets/handle/handle-2.png",
+    ],
+    fps: 8,
+  });
+  handleBoil.dummy.anchorY = 0.2;
+  handleBoil.dummy.anchorX = 0.473036896878;
+  handleBoil.dummy.shortScale = 0.65;
+  handleBoil.dummy.scale = 1;
+  handleBoil.dummy.mobileScale = 0.7;
+  // handleBoil.dummy.pinX = 1920 / 2;
+  // handleBoil.dummy.pinY = 1080 - 300;
+  // handleBoil.update = () => {
+  //   handleBoil.dummy.rotation += 0.01;
+  //   handleBoil.updateChildrenFromDummy();
+  // };
+
+  const armBoil = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/arm/arm-",
+      count: 3,
+      type: "png",
+      pad: 0,
+    }),
+    fps: 8,
+  });
+
+  armBoil.dummy.react = () => {
+    const rotation =
+      Math.atan2(arm.endY - arm.startY, arm.endX - arm.startX) - Math.PI / 2;
+    armBoil.dummy.rotation = rotation;
+    handleBoil.dummy.y = handle.y;
+    handleBoil.dummy.x = handle.x;
+
+    const a = [arm.startX, arm.startY];
+    const b = [handleBoil.dummy.x, handleBoil.dummy.y];
+    const lerped = lerpPoint([a, b], 0.97);
+    handleBoil.dummy.x = lerped[0] - 3;
+    handleBoil.dummy.y = lerped[1] - 262;
   };
+  handle.reactors.push(armBoil.dummy);
+  arm.reactors.push(armBoil.dummy);
+
+  armBoil.dummy.anchorY = 0.2;
+  armBoil.dummy.anchorX = 0.473036896878;
+  armBoil.dummy.mobileScale = 0.7;
+  armBoil.dummy.shortScale = 0.65;
+
+  const idleAnimation = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/idle/250701-Dogspinner-Anim-Idle-v2_",
+      count: 18,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 8,
+  });
+  idleAnimation.dummy.mobileScale = 0.75;
+  idleAnimation.dummy.shortScale = 0.7;
 
   function handleResize() {
-    title.x = canvas.width / 2;
-    title.y = Math.max(280, canvas.height / 3);
-    console.log(title.y);
-    dog.x = canvas.width / 2;
-    dog.y = canvas.height / 3;
-    handleImage.x = canvas.width / 2;
-    handleImage.y = (canvas.height / 3) * 2.25;
+    titleBoil.dummy.x = canvas.width / 2;
+    titleBoil.dummy.y = Math.max(280, canvas.height / 3);
+
+    armBoil.dummy.x = canvas.width / 2;
+    armBoil.dummy.y = (canvas.height / 3) * 2.25;
+
+    handleBoil.dummy.x = canvas.width / 2;
+    handleBoil.dummy.y = (canvas.height / 3) * 2.25;
+
+    idleAnimation.dummy.x = canvas.width / 2;
+    idleAnimation.dummy.y = canvas.height / 3;
   }
 
   addEventListener("resize", handleResize);
   handleResize();
 
-  addEntity(dog);
-  addEntity(title);
-  addEntity(handleImage);
-  // addEntity(arm);
-  // addEntity(end);
-  // addEntity(pivot);
-  // addEntity(handle);
+  addEntity(arm);
+  addEntity(end);
+  addEntity(pivot);
+  addEntity(handle);
+
+  addEntity(idleAnimation);
+  addEntity(titleBoil);
+  addEntity(armBoil);
+  addEntity(handleBoil);
 }
