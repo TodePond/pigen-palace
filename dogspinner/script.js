@@ -183,9 +183,6 @@ class Entity {
 
   constructor() {
     this.resize();
-    // const constrained = this.constrain([this.x, this.y]);
-    // this.x = constrained[0];
-    // this.y = constrained[1];
   }
 
   /**
@@ -400,7 +397,7 @@ class Pivot extends Circle {
 
   resize() {
     this.x = canvas.width / 2;
-    this.y = canvas.height - ARM_LENGTH - HANDLE_RADIUS * 2.5;
+    this.y = canvas.height - getArmLength() - getHandleRadius() * 2.5;
   }
 }
 
@@ -449,7 +446,7 @@ class End extends Entity {
     if (!this.handle) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
     const distance = Math.hypot(this.pivot.x - x, this.pivot.y - y);
-    const maxDistance = ARM_LENGTH; // Maximum distance from the pivot
+    const maxDistance = getArmLength(); // Maximum distance from the pivot
     let angle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
     // if (distance > maxDistance) {
     //   x = this.pivot.x + Math.cos(angle) * maxDistance;
@@ -512,14 +509,24 @@ class End extends Entity {
   }
 }
 
-const ARM_LENGTH = 300;
-const HANDLE_RADIUS = 60;
-const HANDLE_RADIUS_HOVER = 5;
+const BASE_ARM_LENGTH = 300;
+const BASE_HANDLE_RADIUS = 60;
+const BASE_HANDLE_RADIUS_HOVER = 5;
+
+function getArmLength() {
+  return BASE_ARM_LENGTH;
+}
+function getHandleRadius() {
+  return BASE_HANDLE_RADIUS;
+}
+function getHandleRadiusHover() {
+  return BASE_HANDLE_RADIUS_HOVER;
+}
 
 class Handle extends Circle {
   x = canvas.width / 2;
   y = canvas.height;
-  r = HANDLE_RADIUS;
+  r = getHandleRadius();
   fillColor = "rgb(100, 100, 255, 1.0)";
   strokeColor = "black";
   strokeWidth = 2;
@@ -539,12 +546,12 @@ class Handle extends Circle {
   }
 
   hover() {
-    this.r = HANDLE_RADIUS + HANDLE_RADIUS_HOVER;
+    this.r = getHandleRadius() + getHandleRadiusHover();
     setCursor("grab");
   }
 
   unhover() {
-    this.r = HANDLE_RADIUS;
+    this.r = getHandleRadius();
     setCursor("default");
   }
 
@@ -554,7 +561,7 @@ class Handle extends Circle {
     setCursor("grabbing");
     this.touchOffsetX = this.x - pointer.x;
     this.touchOffsetY = this.y - pointer.y;
-    this.r = HANDLE_RADIUS;
+    this.r = getHandleRadius();
     return this;
   }
 
@@ -584,9 +591,11 @@ class Handle extends Circle {
     // Constrain the end to be within a certain distance from the pivot
     const positionIfItWere400Exactly = [
       this.pivot.x +
-        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * ARM_LENGTH,
+        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) *
+          getArmLength(),
       this.pivot.y +
-        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * ARM_LENGTH,
+        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) *
+          getArmLength(),
     ];
 
     // Ease between the current position and the position if it were ARM_LENGTH exactly
@@ -617,6 +626,9 @@ class Handle extends Circle {
   }
 }
 
+const MOBILE_BREAKPOINT_WIDTH = 500;
+const SHORT_BREAKPOINT_HEIGHT = 650;
+
 class Sprite extends Entity {
   x = 0;
   y = 0;
@@ -625,6 +637,22 @@ class Sprite extends Entity {
 
   width = 0;
   height = 0;
+
+  scale = 1;
+
+  mobileScale = 1;
+  desktopScale = 1;
+  shortScale = 1;
+
+  cropBottom = 0;
+  cropTop = 0;
+  cropLeft = 0;
+  cropRight = 0;
+
+  rotation = 0;
+
+  anchorX = 0.5;
+  anchorY = 0.5;
 
   constructor({ src }) {
     super();
@@ -636,25 +664,57 @@ class Sprite extends Entity {
     };
   }
 
+  /**
+   * Get the manually set scale, scaled by the breakpoint scale.
+   */
+  getScaledScale() {
+    let horizontalModifier = 1;
+    if (canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio) {
+      horizontalModifier = this.mobileScale;
+    } else {
+      horizontalModifier = this.desktopScale;
+    }
+
+    let verticalModifier = 1;
+    if (canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio) {
+      verticalModifier = this.shortScale;
+    }
+
+    return this.scale * horizontalModifier * verticalModifier;
+  }
+
+  /**
+   * @param {CanvasRenderingContext2D} context
+   */
   draw(context) {
     if (!this.image.complete) return;
+    const sx = this.cropLeft * this.image.width;
+    const sy = this.cropTop * this.image.height;
+    const cropHorizontal = this.cropLeft + this.cropRight;
+    const cropVertical = this.cropTop + this.cropBottom;
+    const sw = this.image.width * (1 - cropHorizontal);
+    const sh = this.image.height * (1 - cropVertical);
+
+    const width = this.width * this.getScaledScale();
+    const height = this.height * this.getScaledScale();
+    const cropWidth = width * (1 - cropHorizontal);
+    const cropHeight = height * (1 - cropVertical);
+    context.save();
+    context.translate(this.x, this.y);
+    context.rotate(this.rotation);
+
     context.drawImage(
       this.image,
-      this.x - this.width / 2,
-      this.y - this.height / 2,
-      this.width,
-      this.height
+      sx,
+      sy,
+      sw,
+      sh,
+      -width * this.anchorX,
+      -height * this.anchorY,
+      cropWidth,
+      cropHeight
     );
-
-    // stroke around it
-    // context.strokeStyle = "black";
-    // context.lineWidth = 2;
-    // context.strokeRect(
-    //   this.x - this.width / 2,
-    //   this.y - this.height / 2,
-    //   this.width,
-    //   this.height
-    // );
+    context.restore();
   }
 }
 
@@ -666,24 +726,44 @@ class Sprite extends Entity {
   const handle = new Handle({ pivot });
   const end = new End({ handle, pivot });
   const arm = new Arm({ start: pivot, end: end });
-  const forearm = new Arm({ start: end, end: handle });
 
-  const idle = new Sprite({
-    src: "assets/idle.gif",
-  });
+  const title = new Sprite({ src: "assets/title.gif" });
+  title.mobileScale = 0.75;
+  title.cropBottom = 0.7;
+  title.shortScale = 0.7;
+
+  const dog = new Sprite({ src: "assets/placeholder-dog.gif" });
+  dog.mobileScale = 0.75;
+  dog.shortScale = 0.7;
+
+  const handleImage = new Sprite({ src: "assets/placeholder-handle.png" });
+  handleImage.anchorY = 0.2;
+  handleImage.anchorX = 0.473036896878;
+  handleImage.shortScale = 0.65;
+  handleImage.scale = 1;
+  handleImage.mobileScale = 0.7;
+  handleImage.update = () => {
+    handleImage.rotation += 0.01;
+  };
 
   function handleResize() {
-    idle.x = canvas.width / 2;
-    idle.y = canvas.height / 2 - ARM_LENGTH;
+    title.x = canvas.width / 2;
+    title.y = Math.max(280, canvas.height / 3);
+    console.log(title.y);
+    dog.x = canvas.width / 2;
+    dog.y = canvas.height / 3;
+    handleImage.x = canvas.width / 2;
+    handleImage.y = (canvas.height / 3) * 2.25;
   }
 
   addEventListener("resize", handleResize);
   handleResize();
 
-  addEntity(idle);
-  addEntity(arm);
-  // addEntity(forearm);
-  addEntity(end);
-  addEntity(pivot);
-  addEntity(handle);
+  addEntity(dog);
+  addEntity(title);
+  addEntity(handleImage);
+  // addEntity(arm);
+  // addEntity(end);
+  // addEntity(pivot);
+  // addEntity(handle);
 }
