@@ -401,7 +401,6 @@ class Pivot extends Circle {
   resize() {
     this.x = canvas.width / 2;
     this.y = canvas.height - ARM_LENGTH - HANDLE_RADIUS * 2.5;
-    console.log(this.x, this.y);
   }
 }
 
