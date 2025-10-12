@@ -1192,6 +1192,7 @@ function getFramePaths({ base, count, type, pad }) {
   );
 
   idleAnimation.dummy.visible = true;
+  let pauseSafariScore = 0;
   function updateDogState(deltaTime) {
     const rotation = armBoil.dummy.rotation;
     const quadrant = Math.floor(rotation / (Math.PI / 2));
@@ -1246,6 +1247,11 @@ function getFramePaths({ base, count, type, pad }) {
           0.5
         );
       } else {
+        const score = 0.001 * deltaTime;
+        pauseSafariScore += score;
+        if (pauseSafariScore > 3) {
+          audio.pause();
+        }
         audio.volume = Math.max(audio.volume - 0.001 * deltaTime, 0);
       }
       if (audio.volume <= 0) {
@@ -1270,6 +1276,7 @@ function getFramePaths({ base, count, type, pad }) {
       currentState = "spin";
       spinCombo++;
       runCombo++;
+      pauseSafariScore = 0;
       // if (spinCombo > 50) {
       shouldMusicPlay = true;
       // }
