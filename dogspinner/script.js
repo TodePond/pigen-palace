@@ -1088,7 +1088,7 @@ function getFramePaths({ base, count, type, pad }) {
   const idleAnimationUpdate = idleAnimation.update;
   idleAnimation.update = function (deltaTime) {
     idleAnimationUpdate.call(this, deltaTime);
-    updateDogState();
+    updateDogState(deltaTime);
   };
 
   addEventListener("resize", handleResize);
@@ -1111,10 +1111,80 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(arm);
   addEntity(blipBoil);
 
-  function updateDogState() {
-    idleAnimation.dummy.visible = true;
+  let previousRotation = 0;
+  let combo = 0;
+
+  /** @type {Array<{ diffPerMs: number, timestamp: number }>} */
+  let diffsPerMs = [];
+
+  let currentState = "idle";
+
+  idleAnimation.dummy.visible = true;
+  function updateDogState(deltaTime) {
+    const rotation = armBoil.dummy.rotation;
+    const quadrant = Math.floor(rotation / (Math.PI / 2));
+    const previousQuadrant = Math.floor(previousRotation / (Math.PI / 2));
+
+    if (quadrant === 0 && previousQuadrant === -3) {
+      previousRotation += Math.PI * 2;
+    } else if (quadrant === -3 && previousQuadrant === 0) {
+      previousRotation -= Math.PI * 2;
+    }
+
+    const diff = rotation - previousRotation;
+    const diffPerMs = diff / deltaTime;
+    diffsPerMs.push({ diffPerMs, timestamp: Date.now() });
+
+    // Filter out diffs that are longer than 2000ms ago
+    diffsPerMs = diffsPerMs.filter(
+      (diff) => diff.timestamp > Date.now() - 2000
+    );
+
+    const averageDiffPerMs =
+      diffsPerMs.reduce((a, b) => a + b.diffPerMs, 0) / diffsPerMs.length;
+    console.log(averageDiffPerMs.toFixed(4));
+
+    previousRotation = rotation;
+
+    const power = Math.abs(averageDiffPerMs);
+
+    if (currentState === "failure") return;
+    idleAnimation.dummy.visible = false;
     runAnimation.dummy.visible = false;
     spinAnimation.dummy.visible = false;
     tiredAnimation.dummy.visible = false;
+
+    const SPIN_THRESHOLD = 0.018;
+    const RUN_THRESHOLD = 0;
+    const RUN_MAX_FPS = 24;
+    const RUN_MIN_FPS = 4;
+
+    if (power > SPIN_THRESHOLD) {
+      spinAnimation.dummy.visible = true;
+      currentState = "spin";
+    } else if (power > RUN_THRESHOLD) {
+      if (currentState === "idle") {
+        runAnimation.currentFrame = 0;
+      }
+      runAnimation.dummy.visible = true;
+      const fps = lerp(
+        [RUN_MIN_FPS, RUN_MAX_FPS],
+        (power * 1) / SPIN_THRESHOLD
+      );
+      runAnimation.fps = fps;
+      currentState = "run";
+    } else {
+      if (currentState === "run") {
+        runAnimation.dummy.visible = true;
+        runAnimation.fps = 0;
+        currentState = "failure";
+        setTimeout(() => {
+          currentState = "end-failure";
+        }, 1000);
+        return;
+      }
+      idleAnimation.dummy.visible = true;
+      currentState = "idle";
+    }
   }
 }

@@ -2,9 +2,6 @@
 
 ## High priority
 
-- better handle middle
-- blip animation
-
 - measure spinning
   - swap animations
   - play music
