@@ -397,8 +397,8 @@ class ConnectedLine extends Line {
 }
 
 class Arm extends ConnectedLine {
-  // strokeColor = "transparent";
-  strokeColor = "red";
+  strokeColor = "transparent";
+  // strokeColor = "red";
   strokeWidth = 2;
   fillColor = "transparent";
   fillWidth = 20;
@@ -963,7 +963,7 @@ function getFramePaths({ base, count, type, pad }) {
 
   const armBoil = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/arm/251012-Dogspinner-Anim-Handle Base-LINE-Export_",
+      base: "assets/arm/251012-Dogspinner-Anim-Handle Base-COMBINED-Export_",
       count: 3,
       type: "png",
       pad: 5,
