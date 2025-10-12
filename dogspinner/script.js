@@ -715,6 +715,8 @@ class AnimatedSprite extends Entity {
     });
   }
 
+  loop = true;
+
   /**
    * @param {Sprite} child
    */
@@ -740,6 +742,8 @@ class AnimatedSprite extends Entity {
   /** @type {number} */
   frameRate = 0;
 
+  finished = false;
+
   /** @param {number} deltaTime */
   update(deltaTime) {
     // deltatime is milliseconds
@@ -748,7 +752,17 @@ class AnimatedSprite extends Entity {
     const msPerFrame = 1000 / this.fps;
     this.time += deltaTime;
     while (this.time >= msPerFrame) {
-      this.currentFrame = (this.currentFrame + 1) % this.sprites.length;
+      if (this.loop) {
+        this.currentFrame = (this.currentFrame + 1) % this.sprites.length;
+      } else {
+        this.currentFrame = Math.min(
+          this.currentFrame + 1,
+          this.sprites.length - 1
+        );
+        if (this.currentFrame === this.sprites.length - 1) {
+          this.finished = true;
+        }
+      }
       this.time -= msPerFrame;
     }
   }
@@ -1052,6 +1066,19 @@ function getFramePaths({ base, count, type, pad }) {
   tiredAnimation.dummy.mobileScale = 0.75;
   tiredAnimation.dummy.shortScale = 0.7;
 
+  const transitionAnimation = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/transition/251012-Dogspinner-Anim-Transition-v2 Export_",
+      count: 3,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 16,
+  });
+  transitionAnimation.dummy.mobileScale = 0.75;
+  transitionAnimation.dummy.shortScale = 0.7;
+  transitionAnimation.loop = false;
+
   function handleResize() {
     titleBoil.dummy.x = canvas.width / 2;
     titleBoil.dummy.y = Math.max(280, canvas.height / 3);
@@ -1073,6 +1100,9 @@ function getFramePaths({ base, count, type, pad }) {
 
     tiredAnimation.dummy.x = canvas.width / 2;
     tiredAnimation.dummy.y = canvas.height / 3;
+
+    transitionAnimation.dummy.x = canvas.width / 2;
+    transitionAnimation.dummy.y = canvas.height / 3;
 
     const isScaledHandle =
       canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
@@ -1102,6 +1132,7 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(runAnimation);
   addEntity(spinAnimation);
   addEntity(tiredAnimation);
+  addEntity(transitionAnimation);
 
   addEntity(titleBoil);
   addEntity(armBoil);
@@ -1161,12 +1192,6 @@ function getFramePaths({ base, count, type, pad }) {
 
     const power = Math.abs(averageDiffPerMs);
 
-    if (currentState === "failure") return;
-    idleAnimation.dummy.visible = false;
-    runAnimation.dummy.visible = false;
-    spinAnimation.dummy.visible = false;
-    tiredAnimation.dummy.visible = false;
-
     // const SPIN_THRESHOLD = 0.005;
     const SPIN_THRESHOLD = 0.018;
     const RUN_THRESHOLD = 0;
@@ -1188,6 +1213,17 @@ function getFramePaths({ base, count, type, pad }) {
         audio.pause();
       }
       // }
+    }
+
+    idleAnimation.dummy.visible = false;
+    runAnimation.dummy.visible = false;
+    spinAnimation.dummy.visible = false;
+    tiredAnimation.dummy.visible = false;
+    transitionAnimation.dummy.visible = false;
+
+    if (currentState === "failure") {
+      runAnimation.dummy.visible = true;
+      return;
     }
 
     if (power > SPIN_THRESHOLD) {
@@ -1215,17 +1251,38 @@ function getFramePaths({ base, count, type, pad }) {
     } else {
       spinCombo = 0;
       runCombo = 0;
+      if (currentState === "end-failure") {
+        currentState = "total-failure";
+        transitionAnimation.dummy.visible = true;
+        transitionAnimation.currentFrame = 0;
+        transitionAnimation.time = 0;
+        transitionAnimation.finished = false;
+        return;
+      }
+      if (currentState === "total-failure") {
+        if (transitionAnimation.finished) {
+          currentState = "idle";
+        } else {
+          transitionAnimation.dummy.visible = true;
+          return;
+        }
+      }
       if (currentState === "run") {
         runAnimation.dummy.visible = true;
         runAnimation.fps = 0;
         currentState = "failure";
         setTimeout(() => {
+          if (currentState !== "failure") return;
           currentState = "end-failure";
         }, 1000);
         return;
       }
-      idleAnimation.dummy.visible = true;
-      currentState = "idle";
+      if (currentState === "total-failure") {
+        transitionAnimation.dummy.visible = true;
+      } else {
+        idleAnimation.dummy.visible = true;
+        currentState = "idle";
+      }
     }
   }
 }
