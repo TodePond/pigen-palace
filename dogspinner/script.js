@@ -631,7 +631,11 @@ class Handle extends Circle {
     const constrained = this.constrain([x, y]);
     this.x = constrained[0];
     this.y = constrained[1];
+
+    this.playMusic();
   }
+
+  playMusic() {}
 
   react() {
     const constrained = this.constrain([this.x, this.y]);
@@ -1138,6 +1142,12 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(armBoil);
   addEntity(handleBoil);
 
+  handle.playMusic = function () {
+    if (shouldMusicPlay) {
+      // audio.play();
+    }
+  };
+
   addEntity(handle);
   addEntity(arm);
   addEntity(blipBoil);
@@ -1159,9 +1169,27 @@ function getFramePaths({ base, count, type, pad }) {
 
   let shouldMusicPlay = false;
 
-  audio.volume = 0;
-  audio.playbackRate = 0.5;
-  audio.preservesPitch = false;
+  // This is incorrectly detecting chrome as safari
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  // const isSafari = true;
+
+  console.log("isSafari", isSafari);
+
+  audio.volume = 1;
+  if (!isSafari) {
+    audio.playbackRate = 0.5;
+    audio.preservesPitch = false;
+  }
+
+  addEventListener(
+    "pointerdown",
+    () => {
+      audio.play();
+      audio.pause();
+    },
+    { once: true }
+  );
 
   idleAnimation.dummy.visible = true;
   function updateDogState(deltaTime) {
@@ -1199,15 +1227,27 @@ function getFramePaths({ base, count, type, pad }) {
 
     if (shouldMusicPlay) {
       audio.play();
-      audio.volume = Math.min(audio.volume + 0.005 * deltaTime, 1);
-      audio.playbackRate = Math.min(audio.playbackRate + 0.001 * deltaTime, 1);
+
+      if (!isSafari) {
+        audio.volume = Math.min(audio.volume + 0.005 * deltaTime, 1);
+        audio.playbackRate = Math.min(
+          audio.playbackRate + 0.001 * deltaTime,
+          1
+        );
+      } else {
+        audio.volume = Math.min(audio.volume + 0.003 * deltaTime, 1);
+      }
     } else {
       // if (!audio.paused) {
-      audio.volume = Math.max(audio.volume - 0.002 * deltaTime, 0);
-      audio.playbackRate = Math.max(
-        audio.playbackRate - 0.001 * deltaTime,
-        0.5
-      );
+      if (!isSafari) {
+        audio.volume = Math.max(audio.volume - 0.002 * deltaTime, 0);
+        audio.playbackRate = Math.max(
+          audio.playbackRate - 0.001 * deltaTime,
+          0.5
+        );
+      } else {
+        audio.volume = Math.max(audio.volume - 0.001 * deltaTime, 0);
+      }
       if (audio.volume <= 0) {
         audio.pause();
       }
