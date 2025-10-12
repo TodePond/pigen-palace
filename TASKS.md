@@ -3,7 +3,6 @@
 ## High priority
 
 - measure spinning
-  - swap animations
   - play music
 - deploy it on the internet
 

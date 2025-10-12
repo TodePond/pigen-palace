@@ -1111,6 +1111,10 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(arm);
   addEntity(blipBoil);
 
+  const audio = new Audio(
+    "assets/music/Dogspinner Auld Lang Syne and April Showers Extended.mp3"
+  );
+
   let previousRotation = 0;
   let combo = 0;
 
@@ -1118,6 +1122,15 @@ function getFramePaths({ base, count, type, pad }) {
   let diffsPerMs = [];
 
   let currentState = "idle";
+
+  let spinCombo = 0;
+  let runCombo = 0;
+
+  let shouldMusicPlay = false;
+
+  audio.volume = 0;
+  audio.playbackRate = 0.5;
+  audio.preservesPitch = false;
 
   idleAnimation.dummy.visible = true;
   function updateDogState(deltaTime) {
@@ -1154,15 +1167,41 @@ function getFramePaths({ base, count, type, pad }) {
     spinAnimation.dummy.visible = false;
     tiredAnimation.dummy.visible = false;
 
+    // const SPIN_THRESHOLD = 0.005;
     const SPIN_THRESHOLD = 0.018;
     const RUN_THRESHOLD = 0;
     const RUN_MAX_FPS = 24;
     const RUN_MIN_FPS = 4;
 
+    if (shouldMusicPlay) {
+      audio.play();
+      audio.volume = Math.min(audio.volume + 0.005 * deltaTime, 1);
+      audio.playbackRate = Math.min(audio.playbackRate + 0.001 * deltaTime, 1);
+    } else {
+      // if (!audio.paused) {
+      audio.volume = Math.max(audio.volume - 0.002 * deltaTime, 0);
+      audio.playbackRate = Math.max(
+        audio.playbackRate - 0.001 * deltaTime,
+        0.5
+      );
+      if (audio.volume <= 0) {
+        audio.pause();
+      }
+      // }
+    }
+
     if (power > SPIN_THRESHOLD) {
       spinAnimation.dummy.visible = true;
       currentState = "spin";
+      spinCombo++;
+      runCombo++;
+      // if (spinCombo > 50) {
+      shouldMusicPlay = true;
+      // }
     } else if (power > RUN_THRESHOLD) {
+      spinCombo = 0;
+      shouldMusicPlay = false;
+      runCombo++;
       if (currentState === "idle") {
         runAnimation.currentFrame = 0;
       }
@@ -1174,6 +1213,8 @@ function getFramePaths({ base, count, type, pad }) {
       runAnimation.fps = fps;
       currentState = "run";
     } else {
+      spinCombo = 0;
+      runCombo = 0;
       if (currentState === "run") {
         runAnimation.dummy.visible = true;
         runAnimation.fps = 0;
