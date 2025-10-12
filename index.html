@@ -42,14 +42,33 @@
     background-color: rgb(200, 00, 200);
     color: white;
   }
+
+  .pigen-palace-logo {
+    margin-bottom: -80px;
+    max-width: 100%;
+  }
+
+  @media (max-width: 700px) {
+    .pigen-palace-logo {
+      margin-bottom: -40px;
+    }
+  }
+  @media (max-width: 400px) {
+    .pigen-palace-logo {
+      margin-bottom: -20px;
+    }
+  }
 </style>
 
 <main>
-  <h1>Pigen Palace</h1>
-  <a href="https://floracaulton.com">Flora Caulton</a>
-  <a href="https://todepond.com">Lu Wilson</a>
-
-  <section style="margin-top: 80px">
+  <img
+    alt="Pigen Palace"
+    src="assets/pp.gif"
+    width="700"
+    class="pigen-palace-logo" />
+  <section style="margin-bottom: 80px">
     <a class="card-button" href="/dogspinner">PLAY DOGSPINNER</a>
   </section>
+  <a href="https://floracaulton.com">Flora Caulton</a>
+  <a href="https://todepond.com">Lu Wilson</a>
 </main>
