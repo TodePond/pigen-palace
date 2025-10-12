@@ -1156,6 +1156,8 @@ function getFramePaths({ base, count, type, pad }) {
     "assets/music/Dogspinner Auld Lang Syne and April Showers Extended.mp3"
   );
 
+  audio.setAttribute("loop", "true");
+
   let previousRotation = 0;
   let combo = 0;
 
@@ -1173,8 +1175,6 @@ function getFramePaths({ base, count, type, pad }) {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   // const isSafari = true;
-
-  console.log("isSafari", isSafari);
 
   audio.volume = 1;
   if (!isSafari) {
