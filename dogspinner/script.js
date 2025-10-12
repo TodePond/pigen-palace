@@ -1186,7 +1186,6 @@ function getFramePaths({ base, count, type, pad }) {
 
     const averageDiffPerMs =
       diffsPerMs.reduce((a, b) => a + b.diffPerMs, 0) / diffsPerMs.length;
-    console.log(averageDiffPerMs.toFixed(4));
 
     previousRotation = rotation;
 

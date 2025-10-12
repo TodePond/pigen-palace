@@ -2,9 +2,7 @@
 
 ## High priority
 
-- measure spinning
-  - play music
-- deploy it on the internet
+- test end state
 
 ## Low priority
 

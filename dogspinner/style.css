@@ -1,3 +1,8 @@
 * {
   touch-action: none;
 }
+
+@font-face {
+  font-family: "Avenir";
+  src: url("assets/fonts/AVENIRLTSTD-BOOK.OTF") format("opentype");
+}
