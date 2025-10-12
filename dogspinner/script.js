@@ -274,6 +274,15 @@ class Entity {
       reactor.react(deltaTime);
     }
   }
+
+  /**
+   * Update all of the entity's reactors.
+   */
+  updateReactors() {
+    for (const reactor of this.reactors) {
+      reactor.react(0);
+    }
+  }
 }
 
 class Circle extends Entity {
@@ -388,6 +397,7 @@ class ConnectedLine extends Line {
 
 class Arm extends ConnectedLine {
   strokeColor = "transparent";
+  // strokeColor = "red";
   strokeWidth = 2;
   fillColor = "transparent";
   fillWidth = 20;
@@ -522,12 +532,34 @@ const BASE_HANDLE_RADIUS = 60;
 const BASE_HANDLE_RADIUS_HOVER = 5;
 
 function getArmLength() {
+  const mobileBreakpoint =
+    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio;
+  const shortBreakpoint =
+    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
+  if (mobileBreakpoint && shortBreakpoint) {
+    return BASE_ARM_LENGTH * 0.7 * 0.7;
+  }
+  if (mobileBreakpoint || shortBreakpoint) {
+    return BASE_ARM_LENGTH * 0.7;
+  }
   return BASE_ARM_LENGTH;
 }
 function getHandleRadius() {
-  return BASE_HANDLE_RADIUS;
+  if (
+    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
+    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio
+  ) {
+    return BASE_HANDLE_RADIUS * 1;
+  }
+  return BASE_HANDLE_RADIUS * 1.1;
 }
 function getHandleRadiusHover() {
+  if (
+    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
+    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio
+  ) {
+    return BASE_HANDLE_RADIUS_HOVER * 0.7;
+  }
   return BASE_HANDLE_RADIUS_HOVER;
 }
 
@@ -538,7 +570,7 @@ class Handle extends Circle {
   fillColor = "transparent";
   strokeColor = "transparent";
   // fillColor = "rgb(100, 100, 255, 1.0)";
-  // strokeColor = "black";
+  // strokeColor = "blue";
   strokeWidth = 2;
   touchOffsetX = 0;
   touchOffsetY = 0;
@@ -555,23 +587,36 @@ class Handle extends Circle {
     pivot.reactors.push(this);
   }
 
+  isHovered = false;
+  isTouched = false;
+
   hover() {
     this.r = getHandleRadius() + getHandleRadiusHover();
     setCursor("grab");
+    this.isHovered = true;
+    this.updateReactors();
+  }
+
+  resize() {
+    this.r = getHandleRadius();
   }
 
   unhover() {
     this.r = getHandleRadius();
     setCursor("default");
+    this.isHovered = false;
+    this.updateReactors();
   }
 
   update(deltaTime) {}
 
   touch() {
     setCursor("grabbing");
-    this.touchOffsetX = this.x - pointer.x + this.pinX;
-    this.touchOffsetY = this.y - pointer.y + this.pinY;
+    this.isTouched = true;
+    this.touchOffsetX = this.x - pointer.x; // + this.pinX;
+    this.touchOffsetY = this.y - pointer.y; // + this.pinY;
     this.r = getHandleRadius();
+    this.updateReactors();
     return this;
   }
 
@@ -619,6 +664,7 @@ class Handle extends Circle {
     const constrained = this.constrain([this.x, this.y]);
     this.x = constrained[0];
     this.y = constrained[1];
+    this.isTouched = false;
     // if (!this.pivot) return;
     // /** @type [number, number] */
     // const positionIfItWere400Exactly = [
@@ -633,6 +679,7 @@ class Handle extends Circle {
     // // Snap to the position if it were ARM_LENGTH exactly
     // this.x = positionIfItWere400Exactly[0];
     // this.y = positionIfItWere400Exactly[1];
+    this.updateReactors();
   }
 }
 
@@ -834,8 +881,6 @@ function getFramePaths({ base, count, type, pad }) {
   const end = new End({ handle, pivot });
   const arm = new Arm({ start: pivot, end: end });
 
-  handle.pinX = 90;
-
   const titleBoil = new AnimatedSprite({
     frames: [
       "assets/title/title-0.png",
@@ -858,7 +903,7 @@ function getFramePaths({ base, count, type, pad }) {
   });
   handleBoil.dummy.anchorY = 0.2;
   handleBoil.dummy.anchorX = 0.473036896878;
-  handleBoil.dummy.shortScale = 0.65;
+  handleBoil.dummy.shortScale = 0.7;
   handleBoil.dummy.scale = 1;
   handleBoil.dummy.mobileScale = 0.7;
   // handleBoil.dummy.pinX = 1920 / 2;
@@ -888,8 +933,16 @@ function getFramePaths({ base, count, type, pad }) {
     const a = [arm.startX, arm.startY];
     const b = [handleBoil.dummy.x, handleBoil.dummy.y];
     const lerped = lerpPoint([a, b], 0.97);
-    handleBoil.dummy.x = lerped[0] - 3;
-    handleBoil.dummy.y = lerped[1] - 262;
+
+    if (handle.isHovered && !handle.isTouched) {
+      handleBoil.dummy.scale = 1;
+      // handleBoil.dummy.scale = 1.05;
+    } else {
+      handleBoil.dummy.scale = 1;
+    }
+
+    handleBoil.dummy.x = lerped[0] - 3 * handleBoil.dummy.getScaledScale();
+    handleBoil.dummy.y = lerped[1] - 262 * handleBoil.dummy.getScaledScale();
   };
   handle.reactors.push(armBoil.dummy);
   arm.reactors.push(armBoil.dummy);
@@ -897,7 +950,7 @@ function getFramePaths({ base, count, type, pad }) {
   armBoil.dummy.anchorY = 0.2;
   armBoil.dummy.anchorX = 0.473036896878;
   armBoil.dummy.mobileScale = 0.7;
-  armBoil.dummy.shortScale = 0.65;
+  armBoil.dummy.shortScale = 0.7;
 
   const idleAnimation = new AnimatedSprite({
     frames: getFramePaths({
@@ -916,25 +969,31 @@ function getFramePaths({ base, count, type, pad }) {
     titleBoil.dummy.y = Math.max(280, canvas.height / 3);
 
     armBoil.dummy.x = canvas.width / 2;
-    armBoil.dummy.y = (canvas.height / 3) * 2.25;
+    armBoil.dummy.y = canvas.height * 0.75;
 
     handleBoil.dummy.x = canvas.width / 2;
-    handleBoil.dummy.y = (canvas.height / 3) * 2.25;
+    handleBoil.dummy.y = canvas.height * 0.75;
 
     idleAnimation.dummy.x = canvas.width / 2;
     idleAnimation.dummy.y = canvas.height / 3;
+
+    const isScaledHandle =
+      canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
+      canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
+    handle.pinX = 90 * (isScaledHandle ? 0.7 : 1);
   }
 
   addEventListener("resize", handleResize);
   handleResize();
 
-  addEntity(arm);
   addEntity(end);
   addEntity(pivot);
-  addEntity(handle);
 
   addEntity(idleAnimation);
   addEntity(titleBoil);
   addEntity(armBoil);
   addEntity(handleBoil);
+
+  addEntity(handle);
+  addEntity(arm);
 }
