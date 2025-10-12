@@ -2,11 +2,13 @@
 
 ## High priority
 
+- better handle middle
+- blip animation
+
 - measure spinning
   - swap animations
   - play music
 - deploy it on the internet
-- hover the thing
 
 ## Low priority
 

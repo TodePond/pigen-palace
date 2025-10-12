@@ -913,6 +913,21 @@ function getFramePaths({ base, count, type, pad }) {
   //   handleBoil.updateChildrenFromDummy();
   // };
 
+  const holeBoil = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/hole/251012 Dogspinner Handle Hole Temp",
+      count: 1,
+      type: "png",
+      pad: 0,
+    }),
+    fps: 8,
+  });
+
+  // holeBoil.dummy.anchorY = 0.2;
+  // holeBoil.dummy.anchorX = 0.473036896878;
+  holeBoil.dummy.mobileScale = 0.7;
+  holeBoil.dummy.shortScale = 0.7;
+
   const armBoil = new AnimatedSprite({
     frames: getFramePaths({
       base: "assets/arm/arm-",
@@ -981,6 +996,11 @@ function getFramePaths({ base, count, type, pad }) {
       canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
       canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
     handle.pinX = 90 * (isScaledHandle ? 0.7 : 1);
+
+    holeBoil.dummy.anchorX = 0.8;
+    holeBoil.dummy.anchorY = 0.47;
+    holeBoil.dummy.x = canvas.width / 2;
+    holeBoil.dummy.y = canvas.height * 0.75;
   }
 
   addEventListener("resize", handleResize);
@@ -988,6 +1008,7 @@ function getFramePaths({ base, count, type, pad }) {
 
   addEntity(end);
   addEntity(pivot);
+  addEntity(holeBoil);
 
   addEntity(idleAnimation);
   addEntity(titleBoil);
