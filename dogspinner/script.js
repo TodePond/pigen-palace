@@ -8,6 +8,7 @@ canvas.style.top = "0";
 canvas.style.left = "0";
 canvas.style.width = "100%";
 canvas.style.height = "100%";
+canvas.style.imageRendering = "pixelated";
 
 const _context = canvas.getContext("2d");
 if (!_context) throw new Error("Failed to get canvas context");
@@ -617,10 +618,13 @@ class Handle extends Circle {
     this.touchOffsetY = this.y - pointer.y; // + this.pinY;
     this.r = getHandleRadius();
     this.updateReactors();
+    this.hasTouched = true;
     return this;
   }
 
+  hasDragged = false;
   drag() {
+    this.hasDragged = true;
     const x = pointer.x + this.touchOffsetX;
     const y = pointer.y + this.touchOffsetY;
 
@@ -786,6 +790,8 @@ class Sprite extends Entity {
   pinX = 0;
   pinY = 0;
 
+  visible = true;
+
   constructor({ src }) {
     super();
     this.src = src;
@@ -819,7 +825,7 @@ class Sprite extends Entity {
    * @param {CanvasRenderingContext2D} context
    */
   draw(context) {
-    if (!this.image.complete) return;
+    if (!this.image.complete || !this.visible) return;
     const sx = this.cropLeft * this.image.width;
     const sy = this.cropTop * this.image.height;
     const cropHorizontal = this.cropLeft + this.cropRight;
@@ -904,14 +910,41 @@ function getFramePaths({ base, count, type, pad }) {
   handleBoil.dummy.anchorY = 0.2;
   handleBoil.dummy.anchorX = 0.473036896878;
   handleBoil.dummy.shortScale = 0.7;
-  handleBoil.dummy.scale = 1;
   handleBoil.dummy.mobileScale = 0.7;
-  // handleBoil.dummy.pinX = 1920 / 2;
-  // handleBoil.dummy.pinY = 1080 - 300;
-  // handleBoil.update = () => {
-  //   handleBoil.dummy.rotation += 0.01;
-  //   handleBoil.updateChildrenFromDummy();
-  // };
+
+  const blipBoil = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/blip/251012-Dogspinner-Anim-Handle-BLIP-Export Uncropped_",
+      count: 14,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 8,
+  });
+
+  blipBoil.dummy.visible = false;
+
+  function copyHandleBoilToBlipBoil() {
+    blipBoil.dummy.anchorX = handleBoil.dummy.anchorX;
+    blipBoil.dummy.anchorY = handleBoil.dummy.anchorY;
+    blipBoil.dummy.shortScale = handleBoil.dummy.shortScale;
+    blipBoil.dummy.mobileScale = handleBoil.dummy.mobileScale;
+
+    blipBoil.dummy.x = handleBoil.dummy.x;
+    blipBoil.dummy.y = handleBoil.dummy.y;
+    blipBoil.dummy.rotation = handleBoil.dummy.rotation;
+    blipBoil.dummy.pinX = handleBoil.dummy.pinX;
+    blipBoil.dummy.pinY = handleBoil.dummy.pinY;
+    blipBoil.dummy.scale = handleBoil.dummy.scale;
+    blipBoil.dummy.pinRotation = handleBoil.dummy.pinRotation;
+  }
+
+  copyHandleBoilToBlipBoil();
+
+  setTimeout(() => {
+    if (handle.hasDragged) return;
+    blipBoil.dummy.visible = true;
+  }, 6500);
 
   const holeBoil = new AnimatedSprite({
     frames: getFramePaths({
@@ -958,6 +991,10 @@ function getFramePaths({ base, count, type, pad }) {
 
     handleBoil.dummy.x = lerped[0] - 3 * handleBoil.dummy.getScaledScale();
     handleBoil.dummy.y = lerped[1] - 262 * handleBoil.dummy.getScaledScale();
+    copyHandleBoilToBlipBoil();
+    if (handle.hasDragged) {
+      blipBoil.dummy.visible = false;
+    }
   };
   handle.reactors.push(armBoil.dummy);
   arm.reactors.push(armBoil.dummy);
@@ -1017,4 +1054,5 @@ function getFramePaths({ base, count, type, pad }) {
 
   addEntity(handle);
   addEntity(arm);
+  addEntity(blipBoil);
 }
