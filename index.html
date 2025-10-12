@@ -4,14 +4,55 @@
 <title>Pigen Palace</title>
 
 <style>
+  * {
+    font-family: "Avenir", sans-serif;
+    box-sizing: border-box;
+  }
+
   main {
     display: flex;
     justify-content: center;
+    /* justify-content: space-between; */
+    flex-direction: column;
     align-items: center;
     height: 100%;
+  }
+
+  h1 {
+    /* font-weight: 200; */
+  }
+
+  a {
+    color: rgb(200, 00, 200);
+  }
+
+  a:hover {
+    background-color: rgb(200, 00, 200);
+    color: white;
+    outline: 2px solid rgb(200, 00, 200);
+  }
+
+  .card-button {
+    font-size: 20px;
+    border: 1px solid rgb(200, 00, 200);
+    padding: 10px;
+    border-radius: 5px;
+    text-decoration: none;
+    user-select: none;
+  }
+
+  .card-button:hover {
+    background-color: rgb(200, 00, 200);
+    color: white;
   }
 </style>
 
 <main>
   <h1>Pigen Palace</h1>
+  <a href="https://floracaulton.com">Flora Caulton</a>
+  <a href="https://todepond.com">Lu Wilson</a>
+
+  <section style="margin-top: 80px">
+    <a class="card-button" href="/dogspinner">PLAY DOGSPINNER</a>
+  </section>
 </main>
