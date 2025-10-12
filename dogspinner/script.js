@@ -397,8 +397,8 @@ class ConnectedLine extends Line {
 }
 
 class Arm extends ConnectedLine {
-  strokeColor = "transparent";
-  // strokeColor = "red";
+  // strokeColor = "transparent";
+  strokeColor = "red";
   strokeWidth = 2;
   fillColor = "transparent";
   fillWidth = 20;
@@ -948,10 +948,10 @@ function getFramePaths({ base, count, type, pad }) {
 
   const holeBoil = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/hole/251012 Dogspinner Handle Hole Temp",
-      count: 1,
+      base: "assets/hole/251012-Dogspinner-Anim-Handle-HOLE-Export_",
+      count: 3,
       type: "png",
-      pad: 0,
+      pad: 5,
     }),
     fps: 8,
   });
@@ -963,10 +963,10 @@ function getFramePaths({ base, count, type, pad }) {
 
   const armBoil = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/arm/arm-",
+      base: "assets/arm/251012-Dogspinner-Anim-Handle Base-LINE-Export_",
       count: 3,
       type: "png",
-      pad: 0,
+      pad: 5,
     }),
     fps: 8,
   });
@@ -1016,6 +1016,42 @@ function getFramePaths({ base, count, type, pad }) {
   idleAnimation.dummy.mobileScale = 0.75;
   idleAnimation.dummy.shortScale = 0.7;
 
+  const runAnimation = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/run/250701-Dogspinner-Anim-Run1-v2_",
+      count: 8,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 12,
+  });
+  runAnimation.dummy.mobileScale = 0.75;
+  runAnimation.dummy.shortScale = 0.7;
+
+  const spinAnimation = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/spin/250701-Dogspinner-Anim-RunHiSpeed-v2_",
+      count: 3,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 12,
+  });
+  spinAnimation.dummy.mobileScale = 0.75;
+  spinAnimation.dummy.shortScale = 0.7;
+
+  const tiredAnimation = new AnimatedSprite({
+    frames: getFramePaths({
+      base: "assets/tired/250701-Dogspinner-Anim-Tired-v2_",
+      count: 5,
+      type: "png",
+      pad: 5,
+    }),
+    fps: 12,
+  });
+  tiredAnimation.dummy.mobileScale = 0.75;
+  tiredAnimation.dummy.shortScale = 0.7;
+
   function handleResize() {
     titleBoil.dummy.x = canvas.width / 2;
     titleBoil.dummy.y = Math.max(280, canvas.height / 3);
@@ -1029,6 +1065,15 @@ function getFramePaths({ base, count, type, pad }) {
     idleAnimation.dummy.x = canvas.width / 2;
     idleAnimation.dummy.y = canvas.height / 3;
 
+    runAnimation.dummy.x = canvas.width / 2;
+    runAnimation.dummy.y = canvas.height / 3;
+
+    spinAnimation.dummy.x = canvas.width / 2;
+    spinAnimation.dummy.y = canvas.height / 3;
+
+    tiredAnimation.dummy.x = canvas.width / 2;
+    tiredAnimation.dummy.y = canvas.height / 3;
+
     const isScaledHandle =
       canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
       canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
@@ -1040,6 +1085,12 @@ function getFramePaths({ base, count, type, pad }) {
     holeBoil.dummy.y = canvas.height * 0.75;
   }
 
+  const idleAnimationUpdate = idleAnimation.update;
+  idleAnimation.update = function (deltaTime) {
+    idleAnimationUpdate.call(this, deltaTime);
+    updateDogState();
+  };
+
   addEventListener("resize", handleResize);
   handleResize();
 
@@ -1048,6 +1099,10 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(holeBoil);
 
   addEntity(idleAnimation);
+  addEntity(runAnimation);
+  addEntity(spinAnimation);
+  addEntity(tiredAnimation);
+
   addEntity(titleBoil);
   addEntity(armBoil);
   addEntity(handleBoil);
@@ -1055,4 +1110,11 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(handle);
   addEntity(arm);
   addEntity(blipBoil);
+
+  function updateDogState() {
+    idleAnimation.dummy.visible = true;
+    runAnimation.dummy.visible = false;
+    spinAnimation.dummy.visible = false;
+    tiredAnimation.dummy.visible = false;
+  }
 }
