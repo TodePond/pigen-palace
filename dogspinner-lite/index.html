@@ -11,8 +11,12 @@
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0;
+    transition: filter 0.5s ease-in-out;
   }
 
+  * {
+    overscroll-behavior: none;
+  }
   img {
     object-fit: cover;
     height: 100%;
@@ -26,6 +30,19 @@
   }
 </style>
 <script type="module">
+  const body = document.body;
+
+  function preloadImage(src) {
+    const img = new Image();
+    img.src = src;
+  }
+
+  preloadImage("images/dog-0.gif");
+  preloadImage("images/dog-1.gif");
+  preloadImage("images/dog-2.gif");
+  preloadImage("images/dog-3.gif");
+  preloadImage("images/title.gif");
+
   const dogImg = document.getElementById("dog");
   const titleImg = document.getElementById("title");
 
@@ -58,6 +75,11 @@
       }
       case "ArrowRight": {
         state.dogSpeed = wrap(state.dogSpeed + 1, MIN_DOG_SPEED, MAX_DOG_SPEED);
+        break;
+      }
+      case " ": {
+        body.style.filter =
+          body.style.filter === "invert(1)" ? "none" : "invert(1)";
         break;
       }
     }

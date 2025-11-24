@@ -1,0 +1,206 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<main>
+  <img id="owl" />
+  <img id="title" />
+</main>
+<style>
+  * {
+    overscroll-behavior: none;
+  }
+
+  main {
+    background-color: white;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transition: filter 3s ease-in-out;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    transition: filter 0.5s ease-out;
+  }
+
+  img {
+    object-fit: cover;
+    height: 100%;
+    position: absolute;
+    width: 100%;
+    transition: filter 1s ease-out;
+  }
+</style>
+<script type="module">
+  const body = document.body;
+
+  function preloadImage(src) {
+    const img = new Image();
+    img.src = src;
+  }
+
+  preloadImage("images/owl-ready.gif");
+  preloadImage("images/owl-turning.gif");
+  preloadImage("images/owl-staring.gif");
+  preloadImage("images/owl-returning.gif");
+  preloadImage("images/owl-title-0.png");
+  preloadImage("images/owl-title-1.png");
+  preloadImage("images/owl-title-2.png");
+  preloadImage("images/owl-title-3.png");
+  preloadImage("images/owl-title-4.png");
+  preloadImage("images/owl-title-5.png");
+  preloadImage("images/owl-title-6.png");
+  preloadImage("images/owl-title-7.png");
+
+  const owlImg = document.getElementById("owl");
+  const titleImg = document.getElementById("title");
+  const main = document.querySelector("main");
+
+  const MIN_OWL_PROGRESS = 0;
+  const MAX_OWL_PROGRESS = 2;
+
+  const MIN_TITLE_PROGRESS = -7;
+  const MAX_TITLE_PROGRESS = 7;
+
+  const state = {
+    /** @type {"ready" | "turning" | "staring" | "returning"} */
+    owlState: "ready",
+    titleProgress: 0,
+  };
+
+  function wrap(n, min, max) {
+    while (n < min) n += max - min + 1;
+    while (n > max) n -= max - min + 1;
+    return n;
+  }
+
+  function clamp(n, min, max) {
+    return Math.min(Math.max(n, min), max);
+  }
+
+  const transitionEndCallbacks = [];
+
+  function onTransitionEnd() {
+    const callbacks = [...transitionEndCallbacks];
+    transitionEndCallbacks.length = 0;
+    for (const callback of callbacks) {
+      callback();
+    }
+    updateImages();
+  }
+
+  addEventListener("keydown", (event) => {
+    switch (event.key) {
+      case "ArrowDown": {
+        state.titleProgress++;
+        break;
+      }
+      case "ArrowUp": {
+        state.titleProgress--;
+        break;
+      }
+      case "ArrowLeft": {
+        switch (state.owlState) {
+          case "ready": {
+            break;
+          }
+          case "turning": {
+            transitionEndCallbacks.push(() => {
+              state.owlState = "returning";
+              updateImages();
+              setTimeout(() => {
+                state.owlState = "ready";
+                onTransitionEnd();
+              }, 1350);
+            });
+            break;
+          }
+          case "staring": {
+            state.owlState = "returning";
+            setTimeout(() => {
+              state.owlState = "ready";
+              onTransitionEnd();
+            }, 1300);
+            break;
+          }
+        }
+        break;
+      }
+      case "ArrowRight": {
+        switch (state.owlState) {
+          case "ready": {
+            state.owlState = "turning";
+            setTimeout(() => {
+              state.owlState = "staring";
+              onTransitionEnd();
+            }, 1350);
+            break;
+          }
+          case "returning": {
+            transitionEndCallbacks.push(() => {
+              state.owlState = "turning";
+              updateImages();
+              setTimeout(() => {
+                state.owlState = "staring";
+                onTransitionEnd();
+              }, 1300);
+            });
+            break;
+          }
+        }
+        break;
+      }
+      case " ": {
+        body.style.filter =
+          body.style.filter === "invert(1)" ? "none" : "invert(1)";
+
+        titleImg.style.filter =
+          titleImg.style.filter === "invert(1)" ? "none" : "invert(1)";
+        break;
+      }
+      case "Enter": {
+        const isInverted = body.style.filter === "invert(1)";
+        const isDark = main.style.filter === "brightness(0)";
+        if (isDark) {
+          return;
+        }
+        main.style.filter = "brightness(0)";
+        if (!isDark) {
+          setTimeout(() => {
+            state.owlState = "ready";
+            state.titleProgress = 0;
+            main.style.filter = "brightness(1)";
+            updateImages();
+          }, 3000);
+        }
+        break;
+      }
+    }
+
+    updateImages();
+  });
+
+  let currentOwlSrc = "";
+  let currentTitleSrc = "";
+
+  function updateImages() {
+    const owlSrc = `images/owl-${state.owlState}.gif`;
+    if (owlSrc !== currentOwlSrc) {
+      owlImg.src = owlSrc;
+      currentOwlSrc = owlSrc;
+    }
+
+    const titleIndex = Math.abs(state.titleProgress) % 7;
+    const titleSrc = `images/owl-title-${titleIndex}.png`;
+    if (titleSrc !== currentTitleSrc) {
+      titleImg.src = titleSrc;
+      currentTitleSrc = titleSrc;
+    }
+  }
+
+  updateImages();
+</script>
