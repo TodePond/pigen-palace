@@ -93,6 +93,9 @@
     updateImages();
   }
 
+  const TURNING_DURATION = 1250;
+  const RETURNING_DURATION = 700;
+
   addEventListener("keydown", (event) => {
     switch (event.key) {
       case "ArrowDown": {
@@ -115,7 +118,7 @@
               setTimeout(() => {
                 state.owlState = "ready";
                 onTransitionEnd();
-              }, 1350);
+              }, RETURNING_DURATION);
             });
             break;
           }
@@ -124,7 +127,7 @@
             setTimeout(() => {
               state.owlState = "ready";
               onTransitionEnd();
-            }, 1300);
+            }, RETURNING_DURATION);
             break;
           }
         }
@@ -137,7 +140,7 @@
             setTimeout(() => {
               state.owlState = "staring";
               onTransitionEnd();
-            }, 1350);
+            }, TURNING_DURATION);
             break;
           }
           case "returning": {
@@ -147,7 +150,7 @@
               setTimeout(() => {
                 state.owlState = "staring";
                 onTransitionEnd();
-              }, 1300);
+              }, TURNING_DURATION);
             });
             break;
           }
