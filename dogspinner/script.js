@@ -918,10 +918,15 @@ function getFramePaths({ base, count, type, pad }) {
   titleBoil.dummy.shortScale = 0.7;
 
   const handleBoil = new AnimatedSprite({
+    // frames: [
+    //   "assets/handle/handle-0.png",
+    //   "assets/handle/handle-1.png",
+    //   "assets/handle/handle-2.png",
+    // ],
     frames: [
-      "assets/handle/handle-0.png",
-      "assets/handle/handle-1.png",
-      "assets/handle/handle-2.png",
+      "assets/handle/251012 Dogspinner Handle Festive_00000.png",
+      "assets/handle/251012 Dogspinner Handle Festive_00001.png",
+      "assets/handle/251012 Dogspinner Handle Festive_00002.png",
     ],
     fps: 8,
   });
@@ -1024,7 +1029,8 @@ function getFramePaths({ base, count, type, pad }) {
 
   const idleAnimation = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/idle/250701-Dogspinner-Anim-Idle-v2_",
+      // base: "assets/idle/250701-Dogspinner-Anim-Idle-v2_",
+      base: "assets/idle/251209-Dogspinner-Anim-Idle-FESTIVE_",
       count: 18,
       type: "png",
       pad: 5,
@@ -1036,7 +1042,8 @@ function getFramePaths({ base, count, type, pad }) {
 
   const runAnimation = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/run/250701-Dogspinner-Anim-Run1-v2_",
+      // base: "assets/run/250701-Dogspinner-Anim-Run1-v2_",
+      base: "assets/run/251209-Dogspinner-Anim-Run1-FESTIVE_",
       count: 8,
       type: "png",
       pad: 5,
@@ -1048,7 +1055,8 @@ function getFramePaths({ base, count, type, pad }) {
 
   const spinAnimation = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/spin/250701-Dogspinner-Anim-RunHiSpeed-v2_",
+      // base: "assets/spin/250701-Dogspinner-Anim-RunHiSpeed-v2_",
+      base: "assets/spin/251209-Dogspinner-Anim-RunHiSpeed-FESTIVE_",
       count: 3,
       type: "png",
       pad: 5,
@@ -1072,7 +1080,8 @@ function getFramePaths({ base, count, type, pad }) {
 
   const transitionAnimation = new AnimatedSprite({
     frames: getFramePaths({
-      base: "assets/transition/251012-Dogspinner-Anim-Transition-v2 Export_",
+      // base: "assets/transition/251012-Dogspinner-Anim-Transition-v2 Export_",
+      base: "assets/transition/251209-Dogspinner-Anim-Transition-FESTIVE_",
       count: 3,
       type: "png",
       pad: 5,
