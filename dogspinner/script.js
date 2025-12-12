@@ -478,10 +478,7 @@ class End extends Entity {
     //   y = this.pivot.y + Math.sin(angle) * minDistance;
     // }
 
-    let angleOfHandleAroundPivot = Math.atan2(
-      this.handle.y - this.pivot.y,
-      this.handle.x - this.pivot.x
-    );
+    let angleOfHandleAroundPivot = Math.atan2(this.handle.y - this.pivot.y, this.handle.x - this.pivot.x);
 
     const signAngleOfHandleAroundPivot = Math.sign(angleOfHandleAroundPivot);
     const signAngle = Math.sign(angle);
@@ -505,16 +502,12 @@ class End extends Entity {
     // const maxAngleDifference = 0.02;
     if (Math.abs(angleDifferenceBetweenHandleAndEnd) > maxAngleDifference) {
       const direction = angleDifferenceBetweenHandleAndEnd > 0 ? 1 : -1;
-      const newAngle =
-        angleOfHandleAroundPivot + direction * maxAngleDifference;
+      const newAngle = angleOfHandleAroundPivot + direction * maxAngleDifference;
       x = this.pivot.x + Math.cos(newAngle) * distance;
       y = this.pivot.y + Math.sin(newAngle) * distance;
     }
 
-    const handleDistanceFromPivot = Math.hypot(
-      this.handle.x - this.pivot.x,
-      this.handle.y - this.pivot.y
-    );
+    const handleDistanceFromPivot = Math.hypot(this.handle.x - this.pivot.x, this.handle.y - this.pivot.y);
 
     const newAngle = Math.atan2(y - this.pivot.y, x - this.pivot.x);
 
@@ -532,33 +525,33 @@ const BASE_ARM_LENGTH = 275;
 const BASE_HANDLE_RADIUS = 60;
 const BASE_HANDLE_RADIUS_HOVER = 5;
 
+function isMobileBreakpoint() {
+  return canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio;
+}
+function isShortBreakpoint() {
+  return canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
+}
+
 function getArmLength() {
-  const mobileBreakpoint =
-    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio;
-  const shortBreakpoint =
-    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio;
-  if (mobileBreakpoint && shortBreakpoint) {
-    return BASE_ARM_LENGTH * 0.7 * 0.7;
+  let armLength = BASE_ARM_LENGTH;
+
+  if (isShortBreakpoint()) {
+    armLength *= 0.7;
   }
-  if (mobileBreakpoint || shortBreakpoint) {
-    return BASE_ARM_LENGTH * 0.7;
+  if (isMobileBreakpoint()) {
+    armLength *= 0.7;
   }
-  return BASE_ARM_LENGTH;
+
+  return armLength;
 }
 function getHandleRadius() {
-  if (
-    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
-    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio
-  ) {
+  if (isMobileBreakpoint() || isShortBreakpoint()) {
     return BASE_HANDLE_RADIUS * 1;
   }
   return BASE_HANDLE_RADIUS * 1.1;
 }
 function getHandleRadiusHover() {
-  if (
-    canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio ||
-    canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio
-  ) {
+  if (isMobileBreakpoint() || isShortBreakpoint()) {
     return BASE_HANDLE_RADIUS_HOVER * 0.7;
   }
   return BASE_HANDLE_RADIUS_HOVER;
@@ -653,12 +646,8 @@ class Handle extends Circle {
     if (!this.pivot) return [x, y];
     // Constrain the end to be within a certain distance from the pivot
     const positionIfItWere400Exactly = [
-      this.pivot.x +
-        Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) *
-          getArmLength(),
-      this.pivot.y +
-        Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) *
-          getArmLength(),
+      this.pivot.x + Math.cos(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * getArmLength(),
+      this.pivot.y + Math.sin(Math.atan2(y - this.pivot.y, x - this.pivot.x)) * getArmLength(),
     ];
 
     // Ease between the current position and the position if it were ARM_LENGTH exactly
@@ -692,7 +681,7 @@ class Handle extends Circle {
 }
 
 const MOBILE_BREAKPOINT_WIDTH = 500;
-const SHORT_BREAKPOINT_HEIGHT = 650;
+const SHORT_BREAKPOINT_HEIGHT = 0;
 
 class AnimatedSprite extends Entity {
   /**
@@ -759,10 +748,7 @@ class AnimatedSprite extends Entity {
       if (this.loop) {
         this.currentFrame = (this.currentFrame + 1) % this.sprites.length;
       } else {
-        this.currentFrame = Math.min(
-          this.currentFrame + 1,
-          this.sprites.length - 1
-        );
+        this.currentFrame = Math.min(this.currentFrame + 1, this.sprites.length - 1);
         if (this.currentFrame === this.sprites.length - 1) {
           this.finished = true;
         }
@@ -825,14 +811,14 @@ class Sprite extends Entity {
    */
   getScaledScale() {
     let horizontalModifier = 1;
-    if (canvas.width < MOBILE_BREAKPOINT_WIDTH * devicePixelRatio) {
+    if (isMobileBreakpoint()) {
       horizontalModifier = this.mobileScale;
     } else {
       horizontalModifier = this.desktopScale;
     }
 
     let verticalModifier = 1;
-    if (canvas.height < SHORT_BREAKPOINT_HEIGHT * devicePixelRatio) {
+    if (isShortBreakpoint()) {
       verticalModifier = this.shortScale;
     }
 
@@ -863,17 +849,7 @@ class Sprite extends Entity {
     context.translate(this.x, this.y);
     context.rotate(this.rotation);
 
-    context.drawImage(
-      this.image,
-      sx,
-      sy,
-      sw,
-      sh,
-      -width * this.anchorX,
-      -height * this.anchorY,
-      cropWidth,
-      cropHeight
-    );
+    context.drawImage(this.image, sx, sy, sw, sh, -width * this.anchorX, -height * this.anchorY, cropWidth, cropHeight);
     context.restore();
   }
 }
@@ -890,10 +866,7 @@ class Sprite extends Entity {
  * @returns {string[]}
  */
 function getFramePaths({ base, count, type, pad }) {
-  return Array.from(
-    { length: count },
-    (_, i) => `${base}${i.toString().padStart(pad, "0")}.${type}`
-  );
+  return Array.from({ length: count }, (_, i) => `${base}${i.toString().padStart(pad, "0")}.${type}`);
 }
 
 //===========//
@@ -906,11 +879,7 @@ function getFramePaths({ base, count, type, pad }) {
   const arm = new Arm({ start: pivot, end: end });
 
   const titleBoil = new AnimatedSprite({
-    frames: [
-      "assets/title/title-0.png",
-      "assets/title/title-1.png",
-      "assets/title/title-2.png",
-    ],
+    frames: ["assets/title/title-0.png", "assets/title/title-1.png", "assets/title/title-2.png"],
     fps: 8,
   });
   titleBoil.dummy.mobileScale = 0.75;
@@ -995,8 +964,7 @@ function getFramePaths({ base, count, type, pad }) {
   });
 
   armBoil.dummy.react = () => {
-    const rotation =
-      Math.atan2(arm.endY - arm.startY, arm.endX - arm.startX) - Math.PI / 2;
+    const rotation = Math.atan2(arm.endY - arm.startY, arm.endX - arm.startX) - Math.PI / 2;
     armBoil.dummy.rotation = rotation;
     handleBoil.dummy.y = handle.y;
     handleBoil.dummy.x = handle.x;
@@ -1161,9 +1129,10 @@ function getFramePaths({ base, count, type, pad }) {
   addEntity(arm);
   addEntity(blipBoil);
 
-  const audio = new Audio(
-    "assets/music/Dogspinner Auld Lang Syne and April Showers Extended.mp3"
-  );
+  // const audio = new Audio("assets/music/Dogspinner Auld Lang Syne and April Showers Extended.mp3");
+  // const audio = new Audio("assets/music/God_Rest_You_Merry,_Gentlemen_1917.ogg");
+  // const audio = new Audio("assets/music/LibriVox christmascarol_01_dickens_CROPPED.mp3");
+  const audio = new Audio("assets/music/doggi.mp3");
 
   audio.setAttribute("loop", "true");
 
@@ -1218,12 +1187,9 @@ function getFramePaths({ base, count, type, pad }) {
     diffsPerMs.push({ diffPerMs, timestamp: Date.now() });
 
     // Filter out diffs that are longer than 2000ms ago
-    diffsPerMs = diffsPerMs.filter(
-      (diff) => diff.timestamp > Date.now() - 2000
-    );
+    diffsPerMs = diffsPerMs.filter((diff) => diff.timestamp > Date.now() - 2000);
 
-    const averageDiffPerMs =
-      diffsPerMs.reduce((a, b) => a + b.diffPerMs, 0) / diffsPerMs.length;
+    const averageDiffPerMs = diffsPerMs.reduce((a, b) => a + b.diffPerMs, 0) / diffsPerMs.length;
 
     previousRotation = rotation;
 
@@ -1240,10 +1206,7 @@ function getFramePaths({ base, count, type, pad }) {
 
       if (!isSafari) {
         audio.volume = Math.min(audio.volume + 0.005 * deltaTime, 1);
-        audio.playbackRate = Math.min(
-          audio.playbackRate + 0.001 * deltaTime,
-          1
-        );
+        audio.playbackRate = Math.min(audio.playbackRate + 0.001 * deltaTime, 1);
       } else {
         audio.volume = Math.min(audio.volume + 0.003 * deltaTime, 1);
       }
@@ -1251,10 +1214,7 @@ function getFramePaths({ base, count, type, pad }) {
       // if (!audio.paused) {
       if (!isSafari) {
         audio.volume = Math.max(audio.volume - 0.002 * deltaTime, 0);
-        audio.playbackRate = Math.max(
-          audio.playbackRate - 0.001 * deltaTime,
-          0.5
-        );
+        audio.playbackRate = Math.max(audio.playbackRate - 0.001 * deltaTime, 0.5);
       } else {
         const score = 0.001 * deltaTime;
         pauseSafariScore += score;
@@ -1297,10 +1257,7 @@ function getFramePaths({ base, count, type, pad }) {
         runAnimation.currentFrame = 0;
       }
       runAnimation.dummy.visible = true;
-      const fps = lerp(
-        [RUN_MIN_FPS, RUN_MAX_FPS],
-        (power * 1) / SPIN_THRESHOLD
-      );
+      const fps = lerp([RUN_MIN_FPS, RUN_MAX_FPS], (power * 1) / SPIN_THRESHOLD);
       runAnimation.fps = fps;
       currentState = "run";
     } else {
