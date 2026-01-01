@@ -1,9 +1,9 @@
-# pigen-palace
-
-Pigen palace
-
 [pigenpalace.com](https://pigenpalace.com)
 
-## license
+<br>
 
-unless stated otherwise, code is AGPL3, assets are cc-by-sa flora caulton
+## dogspinner
+
+Dogspinner is an art piece by Flora Caulton and Lu Wilson. If you want to do something with it, please [contact us](mailto:lu@todepond.com).
+
+© Flora Caulton and Lu Wilson
